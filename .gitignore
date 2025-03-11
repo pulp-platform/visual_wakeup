@@ -1,0 +1,18 @@
+# Bender
+.bender
+# Software artifacts
+sw/runtime/link.ld
+sw/bootrom/snitch_bootrom.ld
+# Software binaries
+sw/**/*.elf
+sw/**/*.bin
+sw/**/*.dump
+sw/**/*.d
+sw/**/*.o
+# Targets: vsim
+target/sim/vsim/compile.tcl
+target/sim/vsim/work
+target/sim/vsim/modelsim.ini
+target/sim/vsim/transcript
+target/sim/vsim/vsim.wlf
+target/sim/vsim/*.vstf

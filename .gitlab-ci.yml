@@ -1,0 +1,100 @@
+# Copyright 2025 ETH Zurich and University of Bologna.
+# Licensed under the Apache License, Version 2.0, see LICENSE.apache for details.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Sergio Mazzola <smazzola@iis.ee.ethz.ch>
+
+variables:
+  # Tooling
+  BENDER: bender
+  QUESTA: questa-2022.3
+  GCC_DIR: /usr/pack/riscv-1.0-kgf
+  # CI settings
+  GIT_STRATEGY: "clone"
+  GIT_CLEAN_FLAGS: "-ffd"
+  CI_DEBUG_TRACE: "false"
+  # Enable colors in CI terminal
+  TERM: ansi
+  FORCE_COLOR: 1
+
+.base:
+  artifacts:
+    when: always
+    expire_in: 3 days
+
+before_script:
+  # Export RISC-V GCC toolchain paths
+  - export PATH="${GCC_DIR}/default/bin:${GCC_DIR}/STARTUP:${PATH}"
+
+stages:
+  - build
+  - test
+
+#########
+# Build #
+#########
+
+# Compile hardware sources
+build-hw-vsim:
+  extends: .base
+  stage: build
+  script:
+    - make checkout
+    - make snitch_bootrom
+    - make compile-vsim
+  artifacts:
+    paths: [ ".bender", "hw", "target/sim/vsim", "sw/bootrom" ]
+
+# Build testbenches
+.build-tb-template: &build-tb-template
+  extends: .base
+  stage: build
+  needs: [ build-hw-vsim ]
+  script:
+    - sim_top_level=$TB_TOP make opt-vsim
+  dependencies: [ build-hw-vsim ]
+  artifacts:
+    paths: [ ".bender", "hw", "target/sim/vsim", "sw/bootrom" ]
+
+build-tb-vsim:
+  <<: *build-tb-template
+  parallel:
+    matrix:
+      # List of testbenches to build (as found under ./test)
+      - TB_TOP: tb_vwu_top
+
+########
+# Test #
+########
+
+# Template to compile and run software tests
+.test-template: &test-template
+  extends: .base
+  stage: test
+  script:
+    - echo "Running application \"$TEST\" on testbench \"$TB_TOP\""
+    - make sw/apps/$TEST.dump
+    - make sw/apps/$TEST.{instr,data}_mem.bin
+    - GUI=0 APP=$TEST sim_top_level=$TB_TOP make run-vsim
+    - utils/vsim_ret.sh target/sim/vsim/transcript
+  artifacts:
+    paths: [ "hw", "sw", "target/sim/vsim" ]
+    exclude: [ "target/sim/vsim/work/**/*", "target/sim/vsim/work", "target/sim/vsim/*.wlf" ]
+    expire_in: 1 week
+
+# List of tests to run on `tb_vwu_top`
+tb_vwu_top-vsim:
+  <<: *test-template
+  parallel:
+    matrix:
+      - TEST: test_data_mem
+        TB_TOP: tb_vwu_top
+      - TEST: test_hwpe_datamover
+        TB_TOP: tb_vwu_top
+      - TEST: test_axi_lite_master
+        TB_TOP: tb_vwu_top
+  needs:
+  - job: build-tb-vsim
+    parallel:
+      matrix:
+        - TB_TOP: tb_vwu_top

@@ -1,0 +1,41 @@
+# Copyright 2025 ETH Zurich and University of Bologna.
+# Solderpad Hardware License, Version 0.51, see LICENSE.solderpad for details.
+# SPDX-License-Identifier: SHL-0.51
+#
+# Sergio Mazzola <smazzola@iis.ee.ethz.ch>
+
+package:
+  name: visual_wakeup
+  authors:
+    - "Sergio Mazzola <smazzola@iis.ee.ethz.ch>"
+
+dependencies:
+  axi:            { git: "https://github.com/pulp-platform/axi.git",            version: 0.39.6 }
+  common_cells:   { git: "https://github.com/pulp-platform/common_cells.git",   version: 1.38.0 }
+  hci:            { git: "https://github.com/pulp-platform/hci.git",            rev: 8408a6d7a7a4d814dcb3468934e49b407b1c783e } # branch: main
+  scm:            { git: "https://github.com/pulp-platform/scm.git",            version: 1.2.0 }
+  snitch_cluster: { git: "https://github.com/pulp-platform/snitch_cluster.git", rev: 1e48b80ad50a62a100b9ee50513f80f43b349b58 } # branch: main
+  hwpe-ctrl:              { git: "https://github.com/pulp-platform/hwpe-ctrl.git",        version: 1.6 }
+  hwpe-datamover-example: { git: "https://github.com/sermazz/hwpe-datamover-example.git", rev: bf8a5e13c2700d93039b6455bdcab689d4ced810 } # branch: smazzola/vwu
+
+
+sources:
+  # Level 0
+  - hw/vwu_pkg.sv
+  - hw/snitch_bootrom.sv
+  - hw/core_instr_mem.sv
+  - hw/core_instr_demux.sv
+  - hw/core_data_mem.sv
+  - hw/core_data_demux.sv
+  - hw/core_subsystem.sv
+  - hw/vwu_registers.sv
+  - hw/adapter_axi2hci.sv
+  # Level 1
+  - hw/hwpe_subsystem.sv
+  # Level 2
+  - hw/vwu_top.sv
+
+  - target: vwu_test
+    files:
+      # Level 0
+      - test/tb_vwu_top.sv
