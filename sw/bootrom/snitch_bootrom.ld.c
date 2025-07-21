@@ -1,8 +1,8 @@
-/* Copyright 2025 ETH Zurich and University of Bologna. */
-/* Licensed under the Apache License, Version 2.0, see LICENSE.apache for details. */
-/* SPDX-License-Identifier: Apache-2.0 */
+// Copyright 2025 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE.apache for details.
+// SPDX-License-Identifier: Apache-2.0
 
-/* Sergio Mazzola <smazzola@iis.ee.ethz.ch> */
+// Sergio Mazzola <smazzola@iis.ee.ethz.ch>
 
 #include <addr_map.h>
 

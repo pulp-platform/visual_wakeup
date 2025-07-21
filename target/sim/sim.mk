@@ -65,7 +65,7 @@ run-vsim: $(sim_vsim_lib)/$(sim_top_level)_optimized/.tb_opt_compiled
 	cd $(VWU_SIM_DIR)/vsim && \
 	$(QUESTA) vsim $(SIM_VWU_VSIM_ARGS) -lib $(sim_vsim_lib) \
 	$(sim_top_level)_optimized \
-	-do 'set GUI $(GUI); source $(VWU_SIM_DIR)/vsim/tb_vwu_top.do'
+	-do 'set GUI $(GUI); source $(VWU_SIM_DIR)/vsim/tb_vwu_top.tcl'
 
 ###########
 # Helpers #

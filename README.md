@@ -44,7 +44,7 @@ Now that you have both software and hardware compiled, you can launch your simul
 ```bash
 APP=your_app GUI=1 make run-vsim
 ```
-`APP` specifies the name (not the whole path) of the app that you want to run on the VWU; the compilation artifacts of the app have to be available under `sw/apps`. `GUI=1` enables QuestaSim's GUI, which is disabled by default. When enabled, the GUI is set up through the script `target/sim/vsim/tb_vwu_top.do`.
+`APP` specifies the name (not the whole path) of the app that you want to run on the VWU; the compilation artifacts of the app have to be available under `sw/apps`. `GUI=1` enables QuestaSim's GUI, which is disabled by default. When enabled, the GUI is set up through the script `target/sim/vsim/tb_vwu_top.tcl`.
 
 ## Directory structure
 - `hw`: Contains the SystemVerilog hardware description of the VWU, including the bootrom of the Snitch core, automatically generated from the code in `sw/bootrom`. You can regenerate Snitch's bootrom with `make snitch_bootrom`.
