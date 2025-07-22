@@ -24,16 +24,18 @@ module core_data_mem #(
   // Memory //
   ////////////
 
-  logic [IdxWidth-1:0]  rw_idx;
-  logic                 r_en, w_en;
-  logic [DataWidth-1:0] r_data, w_data;
+  logic [IdxWidth-1:0]    rw_idx;
+  logic                   r_en, w_en;
+  logic [DataWidth-1:0]   r_data, w_data;
+  logic [DataWidth/8-1:0] w_be;
 
   // Take the IdxWidth MSBs (i.e., discard the byte offset)
   assign rw_idx = slv_req_i.q.addr[AddrWidth-1:AddrWidth-IdxWidth];
 
-  register_file_1r_1w #(
+  register_file_1r_1w_be #(
     .ADDR_WIDTH ( IdxWidth ),
-    .DATA_WIDTH ( DataWidth )
+    .DATA_WIDTH ( DataWidth ),
+    .NUM_BYTE   ( DataWidth / 8 )
   ) i_scm (
     .clk ( clk_i ),
     .ReadEnable ( r_en ),
@@ -41,7 +43,8 @@ module core_data_mem #(
     .ReadData ( r_data ),
     .WriteEnable ( w_en ),
     .WriteAddr ( rw_idx ),
-    .WriteData ( w_data )
+    .WriteData ( w_data ),
+    .WriteBE ( w_be )
   );
 
   `ifdef TARGET_SIMULATION
@@ -63,7 +66,7 @@ module core_data_mem #(
   // slv_req_i.q.write
   // slv_req_i.q.amo -> unused
   // slv_req_i.q.data
-  // slv_req_i.q.strb -> unused
+  // slv_req_i.q.strb
   // slv_req_i.q.size -> unused
   // slv_req_i.q_valid
   // slv_req_i.p_ready
@@ -90,6 +93,7 @@ module core_data_mem #(
     r_en = 1'b0;
     w_en = 1'b0;
     w_data = '0;
+    w_be = '0;
     // FSM outputs to response port
     slv_rsp_o.p.data = '0;
     slv_rsp_o.p.error = '0;
@@ -104,6 +108,7 @@ module core_data_mem #(
           if (slv_req_i.q.write) begin
             w_en = 1'b1;
             w_data = slv_req_i.q.data;
+            w_be = slv_req_i.q.strb;
             // now let's wait for resp handshake
             next_state = WAIT_RETIRE_W;
           end else begin

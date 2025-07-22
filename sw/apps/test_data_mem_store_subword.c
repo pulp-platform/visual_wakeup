@@ -59,7 +59,7 @@ int main(void) {
     *((volatile uint16_t*)(data_mem_base_addr) + 1) = y;
     x = 0;
     x = *((volatile uint32_t*)(data_mem_base_addr));
-    if (x != 0x1111BEEF) {
+    if (x != 0xBEEF1111) {
         return 9;
     }
     // Test 8-bit store (misaligned)
