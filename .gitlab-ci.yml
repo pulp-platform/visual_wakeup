@@ -61,7 +61,7 @@ build-tb-vsim:
   parallel:
     matrix:
       # List of testbenches to build (as found under ./test)
-      - TB_TOP: tb_vwu_top
+      - TB_TOP: tb_wl_top
 
 ########
 # Test #
@@ -82,19 +82,19 @@ build-tb-vsim:
     exclude: [ "target/sim/vsim/work/**/*", "target/sim/vsim/work", "target/sim/vsim/*.wlf" ]
     expire_in: 1 week
 
-# List of tests to run on `tb_vwu_top`
-tb_vwu_top-vsim:
+# List of tests to run on `tb_wl_top`
+tb_wl_top-vsim:
   <<: *test-template
   parallel:
     matrix:
       - TEST: test_data_mem
-        TB_TOP: tb_vwu_top
+        TB_TOP: tb_wl_top
       - TEST: test_hwpe_datamover
-        TB_TOP: tb_vwu_top
+        TB_TOP: tb_wl_top
       - TEST: test_axi_lite_master
-        TB_TOP: tb_vwu_top
+        TB_TOP: tb_wl_top
   needs:
   - job: build-tb-vsim
     parallel:
       matrix:
-        - TB_TOP: tb_vwu_top
+        - TB_TOP: tb_wl_top

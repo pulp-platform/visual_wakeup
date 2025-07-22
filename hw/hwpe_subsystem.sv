@@ -16,23 +16,23 @@ module hwpe_subsystem #(
   parameter int unsigned ActMemNumBankWords = 128,
   parameter int unsigned ActMemWordWidth = DataWidth,
   // AXI channels
-  parameter type axi_aw_cam_chan_t = logic,
-  parameter type  axi_w_cam_chan_t = logic,
-  parameter type  axi_b_cam_chan_t = logic,
-  parameter type axi_ar_cam_chan_t = logic,
-  parameter type  axi_r_cam_chan_t = logic,
+  parameter type axi_aw_wide_chan_t = logic,
+  parameter type  axi_w_wide_chan_t = logic,
+  parameter type  axi_b_wide_chan_t = logic,
+  parameter type axi_ar_wide_chan_t = logic,
+  parameter type  axi_r_wide_chan_t = logic,
   // AXI req & resp
-  parameter type axi_cam_req_t  = logic,
-  parameter type axi_cam_resp_t = logic,
+  parameter type axi_wide_req_t  = logic,
+  parameter type axi_wide_resp_t = logic,
   // Dependent parameters: do not modify!
   localparam int unsigned HwpeDataWidth = DataWidth * WidePortFact,
   parameter int unsigned ActMemAddrWidth = $clog2(ActMemNumBankWords) + 2 // bank 4-byte words + 2 LSBs for bytes
 )(
   input  logic clk_i,
   input  logic rst_ni,
-  // Camera sensor interface (AXI slave)
-  input  axi_cam_req_t  axi_cam_slv_req_i,
-  output axi_cam_resp_t axi_cam_slv_rsp_o,
+  // Sensor interface (AXI slave)
+  input  axi_wide_req_t  axi_wide_slv_req_i,
+  output axi_wide_resp_t axi_wide_slv_rsp_o,
   // Peripheral slave port
   hwpe_ctrl_intf_periph.slave periph_slave
 );
@@ -41,10 +41,10 @@ module hwpe_subsystem #(
   // Hw config //
   ///////////////
 
-  localparam int unsigned NumHwpe = 2; // Accelerator + Camera interface
+  localparam int unsigned NumHwpe = 2; // Accelerator + Sensor interface
 
   localparam int unsigned HciByteWidth = 8;
-  localparam int unsigned HciIdWidth = 2; // HWPE + Camera port
+  localparam int unsigned HciIdWidth = 2; // HWPE + Sensor port
 
   //////////////////////////////
   // Activation mem & interco //
@@ -88,7 +88,7 @@ module hwpe_subsystem #(
 
   /* Interconnect */
 
-  // - 2 wide ports (accelerator + camera)
+  // - 2 wide ports (accelerator + sensor)
   // - routing of those ports to memory banks + arbitration
   // - ActMemNumBanks on the slave side
 
@@ -127,22 +127,22 @@ module hwpe_subsystem #(
   );
 
   //////////////////////
-  // Camera interface //
+  // Sensor interface //
   //////////////////////
 
   adapter_axi2hci #(
-    .axi_aw_chan_t ( axi_aw_cam_chan_t ),
-    .axi_w_chan_t ( axi_w_cam_chan_t ),
-    .axi_b_chan_t ( axi_b_cam_chan_t ),
-    .axi_ar_chan_t ( axi_ar_cam_chan_t ),
-    .axi_r_chan_t ( axi_r_cam_chan_t ),
-    .axi_req_t ( axi_cam_req_t ),
-    .axi_resp_t ( axi_cam_resp_t )
+    .axi_aw_chan_t ( axi_aw_wide_chan_t ),
+    .axi_w_chan_t ( axi_w_wide_chan_t ),
+    .axi_b_chan_t ( axi_b_wide_chan_t ),
+    .axi_ar_chan_t ( axi_ar_wide_chan_t ),
+    .axi_r_chan_t ( axi_r_wide_chan_t ),
+    .axi_req_t ( axi_wide_req_t ),
+    .axi_resp_t ( axi_wide_resp_t )
   ) i_axi2hci (
     .clk_i ( clk_i ),
     .rst_ni ( rst_ni ),
-    .axi_slave_req_i ( axi_cam_slv_req_i ),
-    .axi_slave_resp_o ( axi_cam_slv_rsp_o ),
+    .axi_slave_req_i ( axi_wide_slv_req_i ),
+    .axi_slave_resp_o ( axi_wide_slv_rsp_o ),
     .tcdm_master ( hci_hwpe[1] )
   );
 
@@ -241,7 +241,7 @@ module hwpe_subsystem #(
   // Assertions //
   ////////////////
 
-  `ifdef TARGET_VWU_TEST
+  `ifdef TARGET_SIMULATION
     initial begin
       check_hardcoded_dw: assert (DataWidth == 32)
       else begin

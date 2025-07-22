@@ -4,14 +4,14 @@
 #
 # Sergio Mazzola <smazzola@iis.ee.ethz.ch>
 
-VWU_HW_DIR = $(VWU_ROOT)/hw
+WL_HW_DIR = $(WL_ROOT)/hw
 
 ##################
 # Snitch bootrom #
 ##################
 
 .PHONY: snitch_bootrom
-snitch_bootrom: $(VWU_HW_DIR)/snitch_bootrom.sv
+snitch_bootrom: $(WL_HW_DIR)/snitch_bootrom.sv
 
-$(VWU_HW_DIR)/snitch_bootrom.sv: $(VWU_SW_DIR)/bootrom/snitch_bootrom.bin $(VWU_UTILS_DIR)/gen_bootrom.py
-	$(VWU_UTILS_DIR)/gen_bootrom.py --sv-module snitch_bootrom $< > $@
+$(WL_HW_DIR)/snitch_bootrom.sv: $(WL_SW_DIR)/bootrom/snitch_bootrom.bin $(WL_UTILS_DIR)/gen_bootrom.py
+	$(WL_UTILS_DIR)/gen_bootrom.py --sv-module snitch_bootrom $< > $@

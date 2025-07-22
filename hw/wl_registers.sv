@@ -4,7 +4,7 @@
 //
 // Sergio Mazzola <smazzola@iis.ee.ethz.ch>
 
-module vwu_registers #(
+module wl_registers #(
   parameter int unsigned NumRegs = 1,
   parameter type req_t = logic,
   parameter type rsp_t = logic,

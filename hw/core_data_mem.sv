@@ -44,10 +44,10 @@ module core_data_mem #(
     .WriteData ( w_data )
   );
 
-  `ifdef TARGET_VWU_TEST
+  `ifdef TARGET_SIMULATION
     function void data_mem_flash_word(input int idx, input logic [DataWidth-1:0] data);
       if (idx < 0 || idx >= (1 << IdxWidth)) begin
-        $fatal(1, "[data_mem] ERROR: Index %0d out of range, max %0d", idx, (1 << IdxWidth) - 1);
+        $fatal(1, "[core_data_mem] ERROR: Index %0d out of range, max %0d", idx, (1 << IdxWidth) - 1);
       end else begin
         i_scm.MemContentxDP[idx] = data;
       end

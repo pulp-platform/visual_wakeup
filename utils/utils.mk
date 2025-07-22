@@ -4,4 +4,4 @@
 #
 # Sergio Mazzola <smazzola@iis.ee.ethz.ch>
 
-VWU_UTILS_DIR = $(VWU_ROOT)/utils
+WL_UTILS_DIR = $(WL_ROOT)/utils

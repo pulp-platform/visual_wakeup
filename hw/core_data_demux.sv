@@ -19,8 +19,8 @@ module core_data_demux #(
   input  rule_t [NumRules-1:0] addr_map_i,
   input  req_t                 slv_req_i,
   output rsp_t                 slv_rsp_o,
-  // The arrays `mst_req_o` and `mst_rsp_i` must have the external port in the last
-  // index so requests not matched by anything else are routed outside of the VWU
+  // The arrays `mst_req_o` and `mst_rsp_i` must have the external port in the
+  // last index so requests not matched by anything else are routed outside
   output req_t [NumPorts-1:0]  mst_req_o,
   input  rsp_t [NumPorts-1:0]  mst_rsp_i
 );
