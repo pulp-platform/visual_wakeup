@@ -195,3 +195,9 @@ packages:
       Git: https://github.com/pulp-platform/tech_cells_generic.git
     dependencies:
     - common_verification
+  wakelet-pd:
+    revision: null
+    version: null
+    source:
+      Path: target/asic
+    dependencies: []

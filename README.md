@@ -39,6 +39,7 @@ To run a first simulation of the Wakelet unit, first clone the required hardware
 ```bash
 make checkout
 ```
+If you do not have access to the internal repository for the Wakelet ASIC target, you will get a warning from Bender about `wakelet-pd`; this is expected.
 
 Then, generate the compilation script for QuestaSim and execute it:
 ```bash
@@ -50,6 +51,17 @@ Now that you have both software and hardware compiled, you can launch your simul
 APP=your_app GUI=1 make run-vsim
 ```
 `APP` specifies the name (not the whole path) of the app that you want to run on Wakelet; the compilation artifacts of the app have to be available under `sw/apps`. `GUI=1` enables QuestaSim's GUI, which is disabled by default. When enabled, the GUI is set up through the script `target/sim/vsim/tb_wl_top.tcl`.
+
+### ASIC implementaton
+If you have access to our internal Wakelet ASIC repository, you can clone it with:
+```bash
+make asic-init
+```
+You can use a similar approach (see the target `asic-init` in `Makefile`) to check out your own ASIC implementation project.
+`Bender.yml` includes the project in `target/asic` as a local dependency: you can insert there your own Bender manifest `target/asic/Bender.yml` with technology-specific source files.
+The root `Makefile` already includes the ASIC makefile positioned at `target/asic/asic.mk`. The root `bender.mk` already provides the basic Bender targets for the ASIC implementation and simulation. You can integrate your technology-specific targets in your `asic.mk`.
+Finally, the testbench `test/tb_wl_top.sv` already uses a netlist wrapper `wl_top_wrap` when the Bender target `-t asic` is used. This is required to re-pack the structures on the interface of `wl_top` that might get unrolled during implementation. For the simulation of your implemented netlist, you have to provide your own `wl_top_wrap`.
+
 
 ## Directory structure
 - `hw`: Contains the SystemVerilog hardware description of Wakelet, including the bootrom of the Snitch core, automatically generated from the code in `sw/bootrom`. You can regenerate Snitch's bootrom with `make snitch_bootrom`.
