@@ -4,4 +4,4 @@
 #
 # Sergio Mazzola <smazzola@iis.ee.ethz.ch>
 
-VWU_TEST_DIR = $(VWU_ROOT)/test
+WL_TEST_DIR = $(WL_ROOT)/test

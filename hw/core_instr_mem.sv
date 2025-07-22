@@ -58,10 +58,10 @@ module core_instr_mem #(
     .WriteData ( w_data_i )
   );
 
-  `ifdef TARGET_VWU_TEST
+  `ifdef TARGET_SIMULATION
     function void instr_mem_flash_word(input int idx, input logic [DataWidth-1:0] data);
       if (idx < 0 || idx >= (1 << IdxWidth)) begin
-        $fatal(1, "[instr_mem] ERROR: Index %0d out of range, max %0d", idx, (1 << IdxWidth) - 1);
+        $fatal(1, "[core_instr_mem] ERROR: Index %0d out of range, max %0d", idx, (1 << IdxWidth) - 1);
       end else begin
         i_scm.MemContentxDP[idx] = data;
       end
@@ -163,7 +163,7 @@ module core_instr_mem #(
     endcase
   end
 
-  `ifdef TARGET_VWU_TEST
+  `ifdef TARGET_SIMULATION
     instr_intf_stable: assert property (
       @(posedge clk_i)
       disable iff ((!rst_ni) !== 1'b0)

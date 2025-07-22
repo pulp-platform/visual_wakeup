@@ -6,7 +6,7 @@
 
 include bender.mk
 
-VWU_ROOT = $(shell pwd)
+WL_ROOT = $(shell pwd)
 
 # Tooling
 BENDER ?= bender
@@ -16,22 +16,22 @@ BENDER ?= bender
 ################
 
 .PHONY: checkout
-checkout: $(VWU_ROOT)/.bender/.checkout_stamp
+checkout: $(WL_ROOT)/.bender/.checkout_stamp
 
-$(VWU_ROOT)/.bender/.checkout_stamp: $(VWU_ROOT)/Bender.lock
+$(WL_ROOT)/.bender/.checkout_stamp: $(WL_ROOT)/Bender.lock
 	$(BENDER) checkout && \
 	date > $@
 
-# $(VWU_ROOT)/Bender.lock: $(VWU_ROOT)/Bender.yml
+# $(WL_ROOT)/Bender.lock: $(WL_ROOT)/Bender.yml
 # 	$(BENDER) update
 
 ###########
 # Targets #
 ###########
 
-include $(VWU_ROOT)/utils/utils.mk
-include $(VWU_ROOT)/sw/sw.mk
-include $(VWU_ROOT)/hw/hw.mk
-include $(VWU_ROOT)/test/test.mk
-include $(VWU_ROOT)/target/sim/sim.mk
-include $(VWU_ROOT)/target/asic/asic.mk
+include $(WL_ROOT)/utils/utils.mk
+include $(WL_ROOT)/sw/sw.mk
+include $(WL_ROOT)/hw/hw.mk
+include $(WL_ROOT)/test/test.mk
+include $(WL_ROOT)/target/sim/sim.mk
+include $(WL_ROOT)/target/asic/asic.mk

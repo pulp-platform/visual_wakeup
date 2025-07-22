@@ -14,7 +14,7 @@ COMMON_TARGS += -t disable_pmcs # for Snitch
 SIM_DEFS  ?=
 # Simulation targets for bender
 SIM_TARGS ?=
-SIM_TARGS += -t vwu_test
+SIM_TARGS += -t wl_test -t simulation
 
 # Asic defines
 ASIC_DEFS ?= -D COMMON_CELLS_ASSERTS_OFF
@@ -26,4 +26,4 @@ ASIC_TARGS += -t asic -t synthesis
 ASIC_SIM_DEFS ?= -D COMMON_CELLS_ASSERTS_OFF
 # Asic targets for bender
 ASIC_SIM_TARGS ?=
-ASIC_SIM_TARGS += -t vwu_test -t asic -t synthesis
+ASIC_SIM_TARGS += -t wl_test -t asic -t synthesis

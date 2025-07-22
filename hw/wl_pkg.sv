@@ -7,7 +7,7 @@
 `include "axi/typedef.svh"
 `include "reqrsp_interface/typedef.svh"
 
-package vwu_pkg;
+package wl_pkg;
 
   /////////////////////
   // Hardware config //
@@ -54,24 +54,24 @@ package vwu_pkg;
   // AXI widths
   localparam int unsigned AxiAddrWidth = AddrWidth;
   localparam int unsigned AxiDataWidth = DataWidth;
-  localparam int unsigned AxiCamDataWidth = DataWidth * HwpeDataWidthFact;
+  localparam int unsigned AxiWideDataWidth = DataWidth * HwpeDataWidthFact;
   localparam int unsigned AxiSlvIdWidth = 2;
   localparam int unsigned AxiUserWidth = 1;
 
   // AXI types
   typedef logic [AxiAddrWidth-1:0]      axi_addr_t;
-  typedef logic [AxiDataWidth-1:0]      axi_data_t;
-  typedef logic [AxiCamDataWidth-1:0]   axi_cam_data_t;
-  typedef logic [AxiDataWidth/8-1:0]    axi_strb_t;
-  typedef logic [AxiCamDataWidth/8-1:0] axi_cam_strb_t;
+  typedef logic [AxiDataWidth-1:0]      axi_lite_data_t;
+  typedef logic [AxiWideDataWidth-1:0]   axi_wide_data_t;
+  typedef logic [AxiDataWidth/8-1:0]    axi_lite_strb_t;
+  typedef logic [AxiWideDataWidth/8-1:0] axi_wide_strb_t;
   typedef logic [AxiSlvIdWidth-1:0]     axi_id_t;
   typedef logic [AxiUserWidth-1:0]      axi_user_t;
   // AXI Lite bus types
   // defines: axi_lite_req_t, axi_lite_resp_t
-  `AXI_LITE_TYPEDEF_ALL(axi_lite, axi_addr_t, axi_data_t, axi_strb_t)
+  `AXI_LITE_TYPEDEF_ALL(axi_lite, axi_addr_t, axi_lite_data_t, axi_lite_strb_t)
   // AXI bus types
   // defines: axi_req_t, axi_resp_t
-  `AXI_TYPEDEF_ALL(axi, axi_addr_t, axi_id_t, axi_cam_data_t, axi_cam_strb_t, axi_user_t)
+  `AXI_TYPEDEF_ALL(axi, axi_addr_t, axi_id_t, axi_wide_data_t, axi_wide_strb_t, axi_user_t)
 
   // Instruction memory
   typedef logic [InstrMemAddrWidth-1:0] instr_mem_addr_t;

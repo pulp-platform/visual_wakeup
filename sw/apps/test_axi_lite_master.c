@@ -16,7 +16,7 @@
 #define TESTVALUE 0xF0CACC1A
 
 int main(void) {
-    // Pick an address outside of the memory map of the VWU
+    // Pick an address outside of the memory map of Wakelet
     volatile uint32_t *ext_addr = (uint32_t *)0xAA1F0000;
     volatile uint32_t x;
 

@@ -68,7 +68,7 @@ module core_instr_demux #(
 
   /* Assertions */
 
-  `ifdef TARGET_VWU_TEST
+  `ifdef TARGET_SIMULATION
     // If an instruction request is outstanding (valid = 1, ready = 0),
     // the address must not change on any cycle until ready goes high.
     stable_instr_addr: assert property (

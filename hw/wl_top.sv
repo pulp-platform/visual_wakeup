@@ -8,8 +8,8 @@
 `include "reqrsp_interface/typedef.svh"
 `include "reqrsp_interface/assign.svh"
 
-module vwu_top
-  import vwu_pkg::*;
+module wl_top
+  import wl_pkg::*;
 #()(
   input logic     clk_i,
   input logic     rst_ni,
@@ -23,9 +23,9 @@ module vwu_top
   input logic     irq_i,
   // End of computation and return value
   output logic [DataWidth-1:0] eoc_o,
-  // AXI camera interface (slave port)
-  input  axi_req_t  axi_cam_slv_req_i,
-  output axi_resp_t axi_cam_slv_rsp_o
+  // AXI wide interface (slave port), for sensors
+  input  axi_req_t  axi_wide_slv_req_i,
+  output axi_resp_t axi_wide_slv_rsp_o
 );
 
   ////////////////////////
@@ -229,13 +229,13 @@ module vwu_top
   );
 
   // Adapt AXI -> memory interface
-  logic      bus_instr_mem_req;
-  logic      bus_instr_mem_rw_gnt;
-  axi_addr_t bus_instr_mem_addr;
-  axi_data_t bus_instr_mem_w_data;
-  logic      bus_instr_mem_we;
-  logic      bus_instr_mem_ack;
-  axi_data_t bus_instr_mem_r_data;
+  logic           bus_instr_mem_req;
+  logic           bus_instr_mem_rw_gnt;
+  axi_addr_t      bus_instr_mem_addr;
+  axi_lite_data_t bus_instr_mem_w_data;
+  logic           bus_instr_mem_we;
+  logic           bus_instr_mem_ack;
+  axi_lite_data_t bus_instr_mem_r_data;
 
   axi_to_mem_intf #(
     .ADDR_WIDTH ( AxiAddrWidth ),
@@ -312,7 +312,7 @@ module vwu_top
 
   // Demux Snitch's data interface to:
   // 0. Private data memory
-  // 1. VWU CSRs
+  // 1. Top-level CSRs
   // 2. HWPE config
   // 3. `core_data_demux` internally catches everything else routing to `core_data_demux_ext`
 
@@ -328,7 +328,7 @@ module vwu_top
         base: HwpeCfgBaseAddr,
         mask: ~(HwpeCfgOffset - 1)
     },
-    '{ // VWU CSRs
+    '{ // Top-level CSRs
         idx: 1,
         base: CsrBaseAddr,
         mask: ~(CsrOffset - 1)
@@ -462,7 +462,7 @@ module vwu_top
   // Top regfile //
   /////////////////
 
-  vwu_registers #(
+  wl_registers #(
     .NumRegs ( CsrNumRegs ),
     .req_t ( core_data_req_t ),
     .rsp_t ( core_data_rsp_t )
@@ -525,7 +525,7 @@ module vwu_top
 
   /* Assertions */
 
-  `ifdef TARGET_VWU_TEST
+  `ifdef TARGET_SIMULATION
     illegal_instr_addr: assert property (
       @(posedge clk_i)
       disable iff ((!rst_ni) !== 1'b0)
@@ -568,7 +568,7 @@ module vwu_top
 
   logic instr_mem_muxed_r_en;
   instr_mem_addr_t instr_mem_muxed_r_addr;
-  axi_data_t instr_mem_muxed_r_data;
+  axi_lite_data_t instr_mem_muxed_r_data;
   logic instr_mem_muxed_r_valid;
 
   // Stream arbiter for read channel
@@ -658,18 +658,18 @@ module vwu_top
     .ActMemNumBanks ( ActMemNumBanks ),
     .ActMemNumBankWords ( ActMemNumBankWords ),
     .ActMemWordWidth ( ActMemWordWidth ),
-    .axi_aw_cam_chan_t ( axi_aw_chan_t ),
-    .axi_w_cam_chan_t ( axi_w_chan_t ),
-    .axi_b_cam_chan_t ( axi_b_chan_t ),
-    .axi_ar_cam_chan_t ( axi_ar_chan_t ),
-    .axi_r_cam_chan_t ( axi_r_chan_t ),
-    .axi_cam_req_t ( axi_req_t ),
-    .axi_cam_resp_t ( axi_resp_t )
+    .axi_aw_wide_chan_t ( axi_aw_chan_t ),
+    .axi_w_wide_chan_t ( axi_w_chan_t ),
+    .axi_b_wide_chan_t ( axi_b_chan_t ),
+    .axi_ar_wide_chan_t ( axi_ar_chan_t ),
+    .axi_r_wide_chan_t ( axi_r_chan_t ),
+    .axi_wide_req_t ( axi_req_t ),
+    .axi_wide_resp_t ( axi_resp_t )
   ) i_hwpe_subsystem (
     .clk_i ( clk_i ),
     .rst_ni ( rst_ni ),
-    .axi_cam_slv_req_i ( axi_cam_slv_req_i ),
-    .axi_cam_slv_rsp_o ( axi_cam_slv_rsp_o ),
+    .axi_wide_slv_req_i ( axi_wide_slv_req_i ),
+    .axi_wide_slv_rsp_o ( axi_wide_slv_rsp_o ),
     .periph_slave ( periph_hwpe_if )
   );
 

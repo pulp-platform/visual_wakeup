@@ -6,8 +6,8 @@
 
 `include "axi/assign.svh"
 
-module tb_vwu_top
-  import vwu_pkg::*;
+module tb_wl_top
+  import wl_pkg::*;
 #()();
 
   //////////////////////
@@ -32,9 +32,9 @@ module tb_vwu_top
   // |_____|<-- AXI wide slave ----.                                          |_______________|
   //    |                          |
   //    |                          |
-  //    v                  axi_cam_tb2dut_req
-  //  s_eoc                axi_cam_tb2dut_rsp
-  //                      (axi_cam_driver)
+  //    v                 axi_wide_tb2dut_req
+  //  s_eoc               axi_wide_tb2dut_rsp
+  //                       (axi_wide_driver)
   //                        
 
   ////////////////////////////
@@ -165,8 +165,8 @@ module tb_vwu_top
   );
 
   //NOTE: As defined in TbXbarAddrMap, the memory range of the Tb sim memory is fragmented.
-  //      In particular, the addressed of the sim memory between `vwu_pkg::InstrMemBaseAddr`
-  //      and `vwu_pkg::DataMemBaseAddr + vwu_pkg::DataMemOffset` cannot be accessed. A remap
+  //      In particular, the addressed of the sim memory between `wl_pkg::InstrMemBaseAddr`
+  //      and `wl_pkg::DataMemBaseAddr + wl_pkg::DataMemOffset` cannot be accessed. A remap
   //      would fix this but since the sim memory is infinite, a remap is not necessary and
   //      would complicate debugging.
 
@@ -217,19 +217,19 @@ module tb_vwu_top
   localparam tb_xbar_rule_t [TbXbarNumRules-1:0] TbXbarAddrMap = '{
     '{ // Tb sim memory (everything above DUT memory)
         idx: 32'd0, // to Tb sim memory
-        start_addr: vwu_pkg::DataMemBaseAddr + vwu_pkg::DataMemOffset,
+        start_addr: wl_pkg::DataMemBaseAddr + wl_pkg::DataMemOffset,
         end_addr: 32'hFFFF_FFFF
     },
     '{ // DUT memory range
         idx: 32'd1, // route to AXI Lite slave port of DUT
         // Only pick the range actually addressable from outside
-        start_addr: vwu_pkg::InstrMemBaseAddr,
-        end_addr: vwu_pkg::DataMemBaseAddr + vwu_pkg::DataMemOffset
+        start_addr: wl_pkg::InstrMemBaseAddr,
+        end_addr: wl_pkg::DataMemBaseAddr + wl_pkg::DataMemOffset
     },
     '{ // Tb sim memory (everything below DUT memory)
         idx: 32'd0, // to Tb sim memory
         start_addr: 32'h0000_0000,
-        end_addr: vwu_pkg::InstrMemBaseAddr
+        end_addr: wl_pkg::InstrMemBaseAddr
     }
   };
 
@@ -285,45 +285,45 @@ module tb_vwu_top
     .default_mst_port_i ( '0 )
   );
 
-  ////////////////////////////////////////
-  // Wide AXI Tb driver (camera sensor) //
-  ////////////////////////////////////////
+  /////////////////////////////////
+  // Wide AXI Tb driver (sensor) //
+  /////////////////////////////////
 
-  // AXI master bus for camera
+  // AXI master bus for sensor
   AXI_BUS #(
     .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiCamDataWidth ),
+    .AXI_DATA_WIDTH ( AxiWideDataWidth ),
     .AXI_ID_WIDTH   ( AxiSlvIdWidth ),
     .AXI_USER_WIDTH ( AxiUserWidth )
-  ) axi_cam_tb2dut ();
+  ) axi_wide_tb2dut ();
 
-  axi_req_t axi_cam_tb2dut_req;
-  axi_resp_t axi_cam_tb2dut_rsp;
+  axi_req_t axi_wide_tb2dut_req;
+  axi_resp_t axi_wide_tb2dut_rsp;
 
-  `AXI_ASSIGN_TO_REQ(axi_cam_tb2dut_req, axi_cam_tb2dut)
-  `AXI_ASSIGN_FROM_RESP(axi_cam_tb2dut, axi_cam_tb2dut_rsp)
+  `AXI_ASSIGN_TO_REQ(axi_wide_tb2dut_req, axi_wide_tb2dut)
+  `AXI_ASSIGN_FROM_RESP(axi_wide_tb2dut, axi_wide_tb2dut_rsp)
 
-  // AXI driver for camera master
+  // AXI driver for sensor
   AXI_BUS_DV #(
     .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiCamDataWidth ),
+    .AXI_DATA_WIDTH ( AxiWideDataWidth ),
     .AXI_ID_WIDTH   ( AxiSlvIdWidth ),
     .AXI_USER_WIDTH ( AxiUserWidth )
-  ) axi_cam_tb2dut_dv (s_clk);
+  ) axi_wide_tb2dut_dv (s_clk);
 
-  `AXI_ASSIGN(axi_cam_tb2dut, axi_cam_tb2dut_dv)
+  `AXI_ASSIGN(axi_wide_tb2dut, axi_wide_tb2dut_dv)
 
   axi_test::axi_driver #(
     .AW ( AxiAddrWidth ),
-    .DW ( AxiCamDataWidth ),
+    .DW ( AxiWideDataWidth ),
     .IW ( AxiSlvIdWidth ),
     .UW ( AxiUserWidth ),
     .TA ( TbTA ),
     .TT ( TbTT )
-  ) axi_cam_driver = new(axi_cam_tb2dut_dv);
+  ) axi_wide_driver = new(axi_wide_tb2dut_dv);
 
   typedef axi_test::axi_ax_beat #(.AW(AxiAddrWidth), .IW(AxiSlvIdWidth), .UW(AxiUserWidth)) aw_beat_t;
-  typedef axi_test::axi_w_beat #(.DW(AxiCamDataWidth), .UW(AxiUserWidth)) w_beat_t;
+  typedef axi_test::axi_w_beat #(.DW(AxiWideDataWidth), .UW(AxiUserWidth)) w_beat_t;
   typedef axi_test::axi_b_beat #(.IW(AxiSlvIdWidth), .UW(AxiUserWidth)) b_beat_t;
 
   /////////
@@ -333,7 +333,7 @@ module tb_vwu_top
   logic s_irq;
   logic [DataWidth-1:0] s_eoc;
 
-  `ifdef TARGET_ASIC vwu_top_wrap `else vwu_top `endif
+  `ifdef TARGET_ASIC wl_top_wrap `else wl_top `endif
     #() dut (
       .clk_i ( s_clk ),
       .rst_ni ( s_rst_n ),
@@ -343,8 +343,8 @@ module tb_vwu_top
       .axi_lite_mst_rsp_i ( axi_lite_dut2tb_rsp ),
       .irq_i ( s_irq ),
       .eoc_o ( s_eoc ),
-      .axi_cam_slv_req_i ( axi_cam_tb2dut_req ),
-      .axi_cam_slv_rsp_o ( axi_cam_tb2dut_rsp )
+      .axi_wide_slv_req_i ( axi_wide_tb2dut_req ),
+      .axi_wide_slv_rsp_o ( axi_wide_tb2dut_rsp )
     );
 
   //////////
@@ -366,8 +366,8 @@ module tb_vwu_top
     axi_lite_tb_driver.reset_master();
     // Reset remaining tb-driven signals
     s_irq = 1'b0;
-    // Reset camera interface
-    axi_cam_driver.reset_master();
+    // Reset sensor AXI interface
+    axi_wide_driver.reset_master();
 
     // Wait for reset to be released
     @(posedge s_rst_n);
@@ -456,33 +456,33 @@ module tb_vwu_top
 
         $display("[TB] Flashing activation memory with random data.");
 
-        // Exploit dedicated camera sensor interface
+        // Exploit dedicated sensor wide interface
 
         aw_beat.ax_id    = '0;
         aw_beat.ax_addr  = '0; // start from address 0 of activation memory
-        aw_beat.ax_len   = ActMemNumBytesInit/(AxiCamDataWidth/8) - 1; // number of beats required - 1
-        aw_beat.ax_size  = $clog2(AxiCamDataWidth/8); // port width
+        aw_beat.ax_len   = ActMemNumBytesInit/(AxiWideDataWidth/8) - 1; // number of beats required - 1
+        aw_beat.ax_size  = $clog2(AxiWideDataWidth/8); // port width
         aw_beat.ax_burst = 2'b01; // INCR burst
-        axi_cam_driver.send_aw(aw_beat);
+        axi_wide_driver.send_aw(aw_beat);
 
-        for (int i = 0; i < ActMemNumBytesInit/(AxiCamDataWidth/8); i++) begin
+        for (int i = 0; i < ActMemNumBytesInit/(AxiWideDataWidth/8); i++) begin
           // Generate random data for activation memory
           rand_success = std::randomize(w_beat.w_data); assert(rand_success);
           w_beat.w_strb = '1; // write all bytes
-          if (i == ActMemNumBytesInit/(AxiCamDataWidth/8) - 1) begin
+          if (i == ActMemNumBytesInit/(AxiWideDataWidth/8) - 1) begin
             w_beat.w_last = 1'b1; // last beat
           end else begin
             w_beat.w_last = 1'b0;
           end
           w_beat.w_user = '0;
-          axi_cam_driver.send_w(w_beat);
+          axi_wide_driver.send_w(w_beat);
         end
         // Wait for the last beat to be acknowledged
-        axi_cam_driver.recv_b(b_beat);
+        axi_wide_driver.recv_b(b_beat);
 
         $info("[TB] Activation memory flash complete. %0d bytes loaded in SPM.", ActMemNumBytesInit);
 
-        axi_cam_driver.reset_master();
+        axi_wide_driver.reset_master();
         @(posedge s_clk);
       end
     join

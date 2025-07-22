@@ -1,8 +1,13 @@
-# Visual Wake-Up
+# Wakelet
 
-The Visual Wake-Up (VWU) domain is a minimal cluster-like infrastructure that enhances the flexibility of an Hardware PE (HWPE) accelerator with negligible impact on area cost and power consumption. The VWU features a minimal rv32e Snitch core with private instruction and data memories that can be refilled by the SoC through the AXI Lite slave interface. A AXI Lite master port can be used to configure the employed sensor. Snitch configures the integrated HWPE through a register interface, and a wide AXI slave interface refills the activation memory of the HWPE from a camera sensor. All integrated memories are latch-based.
+*Wakelet* is a minimal cluster-like infrastructure that enhances the flexibility of an Hardware PE (HWPE) accelerator with negligible impact on area occupation and power consumption.
 
-The VWU is developed as part of the PULP project, a joint effort between ETH Zurich and the University of Bologna.
+Wakelet features a minimal rv32e Snitch core with private instruction and data memories that can be preloaded by the SoC through the AXI Lite interface. Once preloaded, Wakelut runs independently thanks to the built-in bootrom and instruction memory.
+Snitch configures the integrated HWPE through a register interface, and a wide AXI slave can stream data from a sensor into the activation memory of the HWPE. The AXI Lite interface can also be used to configure the employed sensor. All integrated memories are latch-based.
+
+Thanks to its low power consumption and to the flexibility granted by the HWPE infrastructure, Wakelet target's applications span from always-on digital or image signal processing (DSP or ISP) to NN-based detection to wake up the rest of the SoC.
+
+Wakelet is developed as part of the PULP project, a joint effort between ETH Zurich and the University of Bologna.
 
 ## Requirements & set-up
 
@@ -13,7 +18,7 @@ The VWU is developed as part of the PULP project, a joint effort between ETH Zur
 ## Getting started
 
 ### Software
-Software applications to be run on the VWU can be placed in the directory `sw/apps`. Some basic tests are already provided.
+Software applications to be run on Wakelet can be placed in the directory `sw/apps`. Some basic tests are already provided.
 To compile all applications run, from the project root:
 ```bash
 make all-sw
@@ -30,7 +35,7 @@ make sw/apps/$APP.{dump,instr_mem.bin,data_mem.bin}
 ```
 
 ### Hardware
-To run a first simulation of the VWU unit, first clone the required hardware dependencies. If prompted with different dependency versions to select, refer to the ones already specified in `Bender.lock`. From the project root:
+To run a first simulation of the Wakelet unit, first clone the required hardware dependencies. If prompted with different dependency versions to select, refer to the ones already specified in `Bender.lock`. From the project root:
 ```bash
 make checkout
 ```
@@ -44,11 +49,11 @@ Now that you have both software and hardware compiled, you can launch your simul
 ```bash
 APP=your_app GUI=1 make run-vsim
 ```
-`APP` specifies the name (not the whole path) of the app that you want to run on the VWU; the compilation artifacts of the app have to be available under `sw/apps`. `GUI=1` enables QuestaSim's GUI, which is disabled by default. When enabled, the GUI is set up through the script `target/sim/vsim/tb_vwu_top.tcl`.
+`APP` specifies the name (not the whole path) of the app that you want to run on Wakelet; the compilation artifacts of the app have to be available under `sw/apps`. `GUI=1` enables QuestaSim's GUI, which is disabled by default. When enabled, the GUI is set up through the script `target/sim/vsim/tb_wl_top.tcl`.
 
 ## Directory structure
-- `hw`: Contains the SystemVerilog hardware description of the VWU, including the bootrom of the Snitch core, automatically generated from the code in `sw/bootrom`. You can regenerate Snitch's bootrom with `make snitch_bootrom`.
-- `sw`: The SDK and applications for the VWU. It includes:
+- `hw`: Contains the SystemVerilog hardware description of Wakelet, including the bootrom of the Snitch core, automatically generated from the code in `sw/bootrom`. You can regenerate Snitch's bootrom with `make snitch_bootrom`.
+- `sw`: The SDK and applications for Wakelet. It includes:
     - `runtime`: The bare-metal runtime, featuring: a linker script that groups the elf sections to correctly generate complete, independent, and lean binaries to load the instruction and data memories separately; a crt0 runtime to initialize the core's state, and the system's address map.
     - `hal`: Drivers for the devices around the Snitch core (CSRs, HWPE).
     - `bootrom`: The code implemented in Snitch's bootrom; in its current implementation, it initializes the core's register file and goes into wfi.
@@ -56,28 +61,28 @@ APP=your_app GUI=1 make run-vsim
 - `target`: The different targets of compilation, each one with its own makefile. You can, for example, place here your additional targets for different ASIC implementations and FPGA. Each target's makefile must be included in the root `Makefile`.
     - `sim`: A predefined flow for RTL simulation in QuestaSim.
     - `asic`: Placeholder for an ASIC target.
-- `test`: SystemVerilog testbench and testing infrastructure for the VWU.
+- `test`: SystemVerilog testbench and testing infrastructure for Wakelet.
 - `utils`: Useful scripts and tools.
 
 ## Testing and execution flow
 
-The VWU's testbench contains 4 main components:
-- a virtual AXI Lite driver connected to the VWU's AXI Lite master port
-- a virtual AXI Lite driver connected to the VWU's AXI Lite slave port
-- a virtual, wide AXI driver connected to the VWU's wide AXI port for the camera sensor
-- the DUT, i.e., the VWU top-level
+Wakelet's testbench contains 4 main components:
+- a virtual AXI Lite driver connected to Wakelet's AXI Lite master port
+- a virtual AXI Lite driver connected to Wakelet's AXI Lite slave port
+- a virtual, wide AXI driver connected to Wakelet's wide AXI port for the sensor
+- the DUT, i.e., Wakelet top-level
 
 The **testbench execution flow** is the following:
 1. The virtual AXI Lite master loads `$APP.instr_mem.bin` in the instruction memory
 2. The virtual AXI Lite master loads `$APP.data_mem.bin` in the data memory
 3. (in parallel to 1. and 2.) The virtual wide AXI master loads a parametrizable number of bytes with random content in the activation memory
 4. The testbench sends an interrupt to the Snitch core, which starts fetching from the instruction memory
-5. While the VWU runs, the testbench polls the exposed EOC register to detect the end of the software run
+5. While Wakelet runs, the testbench polls the exposed EOC register to detect the end of the software run
 6. Finally, the testbench receives the return value and can launch another execution or terminate the simulation
 
-Such a configuration can be used to seamlessly simulate also ASIC implementations of the VWU top-level.
+Such a configuration can be used to seamlessly simulate also ASIC implementations of Wakelet top-level.
 
-The **execution flow of the VWU** is the following:
+The **execution flow of Wakelet** is the following:
 1. Just after the reset is deasserted, the Snitch core boots at the first address of the bootrom
 2. The code in the bootrom initializes Snitch's register file, enable the local Machine External interrupt, and goes into wfi
 3. When Snitch receives a `meip` interrupt, it jumps to the first instruction loaded in the instruction memory, starting the execution of the crt0
