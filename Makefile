@@ -39,11 +39,11 @@ include $(WL_ROOT)/target/sim/sim.mk
 # Non-free targets #
 ####################
 
-NONFREE_REMOTE ?= git@iis-git.ee.ethz.ch:pulp-restricted/wakelet-pd.git
-NONFREE_REV    ?= 54c3cd3aaabfa62a9625883f72f5c1335a4792dd
+ASIC_REMOTE ?= git@iis-git.ee.ethz.ch:pulp-restricted/wakelet-pd.git
+ASIC_REV    ?= b422d228e99e79e4edac31ad0801009fbeb37117
 
 asic-init:
-	git clone $(NONFREE_REMOTE) target/asic
-	cd target/asic && git checkout $(NONFREE_REV)
+	git clone $(ASIC_REMOTE) target/asic
+	cd target/asic && git checkout $(ASIC_REV)
 
 -include $(WL_ROOT)/target/asic/asic.mk

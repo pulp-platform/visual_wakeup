@@ -89,6 +89,10 @@ tb_wl_top-vsim:
     matrix:
       - TEST: test_data_mem
         TB_TOP: tb_wl_top
+      - TEST: test_data_mem_load_subword
+        TB_TOP: tb_wl_top
+      - TEST: test_data_mem_store_subword
+        TB_TOP: tb_wl_top
       - TEST: test_hwpe_datamover
         TB_TOP: tb_wl_top
       - TEST: test_axi_lite_master

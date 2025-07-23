@@ -5,7 +5,7 @@
 // Sergio Mazzola <smazzola@iis.ee.ethz.ch>
 
 /*
- * Test the core's private data memory.
+ * Test the core's private data memory with normal 32-bit accesses.
  */
 
 #include <stdint.h>
@@ -24,13 +24,13 @@ int main(void) {
     // Test BSS (zero-initialized data memory section)
     x = *(&test_bss);
     if (x != 0) {
-        return x;
+        return 1;
     }
 
     // Test read-only data section
     x = *(&test_rodata);
     if (x != 0xF0CACC1A) {
-        return x;
+        return 2;
     }
 
     // Addressability test of free data memory section
@@ -44,23 +44,23 @@ int main(void) {
     // Check if writes were successful
     x = *data_mem_base_addr;
     if (x != 0x5) {
-        return x;
+        return 3;
     }
     x = *(data_mem_base_addr + 1);
     if (x != 0x11) {
-        return x;
+        return 4;
     }
     x = *(data_mem_base_addr + 2);
     if (x != 0x22) {
-        return x;
+        return 5;
     }
     x = *(data_mem_base_addr + 16);
     if (x != 0x66) {
-        return x;
+        return 6;
     }
     x = *(data_mem_base_addr + 32);
     if (x != 0xFF) {
-        return x;
+        return 7;
     }
 
 	return 0;
