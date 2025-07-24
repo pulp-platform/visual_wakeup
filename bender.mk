@@ -9,6 +9,7 @@ COMMON_DEFS ?=
 # Common targets for bender
 COMMON_TARGS ?=
 COMMON_TARGS += -t disable_pmcs # for Snitch
+COMMON_TARGS += -t wl_scm # -t wl_sram
 
 # Simulation defines
 SIM_DEFS  ?=

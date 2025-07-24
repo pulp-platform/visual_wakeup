@@ -32,29 +32,55 @@ module core_data_mem #(
   // Take the IdxWidth MSBs (i.e., discard the byte offset)
   assign rw_idx = slv_req_i.q.addr[AddrWidth-1:AddrWidth-IdxWidth];
 
-  register_file_1r_1w_be #(
-    .ADDR_WIDTH ( IdxWidth ),
-    .DATA_WIDTH ( DataWidth ),
-    .NUM_BYTE   ( DataWidth / 8 )
-  ) i_scm (
-    .clk ( clk_i ),
-    .ReadEnable ( r_en ),
-    .ReadAddr ( rw_idx ),
-    .ReadData ( r_data ),
-    .WriteEnable ( w_en ),
-    .WriteAddr ( rw_idx ),
-    .WriteData ( w_data ),
-    .WriteBE ( w_be )
-  );
+  `ifdef TARGET_WL_SCM
+    // Generate standard-cell-based memory
+    register_file_1r_1w_be #(
+      .ADDR_WIDTH ( IdxWidth ),
+      .DATA_WIDTH ( DataWidth ),
+      .NUM_BYTE   ( DataWidth / 8 )
+    ) i_scm (
+      .clk ( clk_i ),
+      .ReadEnable ( r_en ),
+      .ReadAddr ( rw_idx ),
+      .ReadData ( r_data ),
+      .WriteEnable ( w_en ),
+      .WriteAddr ( rw_idx ),
+      .WriteData ( w_data ),
+      .WriteBE ( w_be )
+    );
 
-  `ifdef TARGET_SIMULATION
-    function void data_mem_flash_word(input int idx, input logic [DataWidth-1:0] data);
-      if (idx < 0 || idx >= (1 << IdxWidth)) begin
-        $fatal(1, "[core_data_mem] ERROR: Index %0d out of range, max %0d", idx, (1 << IdxWidth) - 1);
-      end else begin
-        i_scm.MemContentxDP[idx] = data;
-      end
-    endfunction
+    `ifdef TARGET_SIMULATION
+      // Utility function to load SCM faster in purely RTL simulation.
+      function void data_mem_flash_word(input int idx, input logic [DataWidth-1:0] data);
+        if (idx < 0 || idx >= (1 << IdxWidth)) begin
+          $fatal(1, "[core_data_mem] ERROR: Index %0d out of range, max %0d", idx, (1 << IdxWidth) - 1);
+        end else begin
+          i_scm.MemContentxDP[idx] = data;
+        end
+      endfunction
+    `endif
+
+  `elsif TARGET_WL_SRAM
+    // Generate SRAM cut
+    tc_sram #(
+      .NumWords ( 2 ** IdxWidth ),
+      .DataWidth ( DataWidth ),
+      .ByteWidth ( 32'd8 ),
+      .NumPorts ( 32'd1 ),
+      .Latency ( 32'd1 )
+    ) i_sram (
+      .clk_i ( clk_i ),
+      .rst_ni ( rst_ni ),
+      .req_i ( r_en | w_en ),
+      .we_i ( w_en ),
+      .addr_i ( rw_idx ),
+      .wdata_i ( w_data ),
+      .be_i ( w_be ),
+      .rdata_o ( r_data )
+    );
+
+  `else
+    $fatal(1, "[core_data_mem] ERROR: No target memory type defined (no TARGET_WL_SCM nor TARGET_WL_SRAM)");
   `endif
 
   //////////////////////////////

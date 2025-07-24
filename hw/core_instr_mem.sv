@@ -45,27 +45,66 @@ module core_instr_mem #(
   logic  [IdxWidth-1:0] mem_r_idx;
   logic [DataWidth-1:0] mem_r_data;
 
-  register_file_1r_1w #(
-    .ADDR_WIDTH ( IdxWidth ),
-    .DATA_WIDTH ( DataWidth )
-  ) i_scm (
-    .clk ( clk_i ),
-    .ReadEnable ( mem_r_en ),
-    .ReadAddr ( mem_r_idx ),
-    .ReadData ( mem_r_data ),
-    .WriteEnable ( w_en_i ),
-    .WriteAddr ( w_idx ),
-    .WriteData ( w_data_i )
-  );
+  // With SCM we have dedicated, separate ports for read and write, and they can happen in parallel.
+  // SRAM has only one port, shared for read and write: we give priority to read requests, while
+  // writes are masked as long as there is a read requested or in progress.
 
-  `ifdef TARGET_SIMULATION
-    function void instr_mem_flash_word(input int idx, input logic [DataWidth-1:0] data);
-      if (idx < 0 || idx >= (1 << IdxWidth)) begin
-        $fatal(1, "[core_instr_mem] ERROR: Index %0d out of range, max %0d", idx, (1 << IdxWidth) - 1);
-      end else begin
-        i_scm.MemContentxDP[idx] = data;
-      end
-    endfunction
+  `ifdef TARGET_WL_SCM
+    // Generate standard-cell-based memory
+    register_file_1r_1w #(
+      .ADDR_WIDTH ( IdxWidth ),
+      .DATA_WIDTH ( DataWidth )
+    ) i_scm (
+      .clk ( clk_i ),
+      .ReadEnable ( mem_r_en ),
+      .ReadAddr ( mem_r_idx ),
+      .ReadData ( mem_r_data ),
+      .WriteEnable ( w_en_i ),
+      .WriteAddr ( w_idx ),
+      .WriteData ( w_data_i )
+    );
+
+    // Write is effective as per the cycle after the request
+    `FFARN(w_ack_o, w_en_i, 1'b0, clk_i, rst_ni)
+
+    `ifdef TARGET_SIMULATION
+      // Utility function to load SCM faster in purely RTL simulation.
+      function void instr_mem_flash_word(input int idx, input logic [DataWidth-1:0] data);
+        if (idx < 0 || idx >= (1 << IdxWidth)) begin
+          $fatal(1, "[core_instr_mem] ERROR: Index %0d out of range, max %0d", idx, (1 << IdxWidth) - 1);
+        end else begin
+          i_scm.MemContentxDP[idx] = data;
+        end
+      endfunction
+    `endif
+
+  `elsif TARGET_WL_SRAM
+    logic w_en_filter;
+    assign w_en_filter = w_en_i & ~mem_r_en & ~r_en_i; // no read in progress or requested
+
+    // Generate SRAM cut
+    tc_sram #(
+      .NumWords ( 2 ** IdxWidth ),
+      .DataWidth ( DataWidth ),
+      .ByteWidth ( 32'd8 ),
+      .NumPorts ( 32'd1 ),
+      .Latency ( 32'd1 )
+    ) i_sram (
+      .clk_i ( clk_i ),
+      .rst_ni ( rst_ni ),
+      .req_i ( mem_r_en | w_en_filter ),
+      .we_i ( w_en_filter ),
+      .addr_i ( mem_r_en ? mem_r_idx : w_idx ),
+      .wdata_i ( w_data_i ),
+      .be_i ( '1 ),
+      .rdata_o ( mem_r_data )
+    );
+
+    // Write is effective as per the cycle after the request
+    `FFARN(w_ack_o, w_en_filter, 1'b0, clk_i, rst_ni)
+
+  `else
+    $fatal(1, "[core_instr_mem] ERROR: No target memory type defined (no TARGET_WL_SCM nor TARGET_WL_SRAM)");
   `endif
 
   ///////////////////////
@@ -175,12 +214,5 @@ module core_instr_mem #(
       );
     end
   `endif
-
-  ////////////////////////
-  // Write port control //
-  ////////////////////////
-
-  // Write is effective as per the cycle after the request
-  `FFARN(w_ack_o, w_en_i, 1'b0, clk_i, rst_ni)
 
 endmodule

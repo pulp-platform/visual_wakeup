@@ -37,11 +37,12 @@ make sw/apps/$APP.{dump,instr_mem.bin,data_mem.bin}
 ```
 
 ### Hardware
-To run a first simulation of the Wakelet unit, first clone the required hardware dependencies. If prompted with different dependency versions to select, refer to the ones already specified in `Bender.lock`. From the project root:
+To run a first simulation of the Wakelet unit, first clone the required hardware dependencies. From the project root:
 ```bash
 make checkout
 ```
 If you do not have access to the internal repository for the Wakelet ASIC target, you will get a warning from Bender about `wakelet-pd`; this is expected.
+If you change `Bender.yml`, make sure to run first `bender update`.
 
 Then, generate the compilation script for QuestaSim and execute it:
 ```bash

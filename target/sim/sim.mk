@@ -42,7 +42,7 @@ ifneq ($(APP),)
 	SIM_WL_VSIM_ARGS += +bin=$(WL_SW_DIR)/apps/$(APP)
 endif
 
-$(WL_SIM_DIR)/vsim/compile.tcl: $(WL_ROOT)/Bender.lock $(WL_ROOT)/Bender.yml
+$(WL_SIM_DIR)/vsim/compile.tcl: $(WL_ROOT)/Bender.lock $(WL_ROOT)/Bender.yml $(WL_ROOT)/bender.mk
 	$(BENDER) script vsim $(COMMON_DEFS) $(SIM_DEFS) $(COMMON_TARGS) $(SIM_TARGS) --vlog-arg="$(SIM_WL_VLOG_ARGS)" > $@
 
 .PHONY: compile-vsim

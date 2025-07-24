@@ -217,24 +217,50 @@ module hwpe_subsystem #(
 
   for (genvar i = 0; i < ActMemNumBanks; i++) begin : banks_gen
 
-    // With regular TCDM banks, the grant is always asseterd
+    // With regular TCDM banks, the grant is always asserted
     assign hci_mem[i].gnt = 1'b1;
 
-    register_file_1r_1w_be #(
-      .ADDR_WIDTH ( $clog2(ActMemNumBankWords) ),
-      .DATA_WIDTH ( DataWidth ),
-      .NUM_BYTE   ( DataWidth / 8 )
-    ) i_scm (
-      .clk ( clk_i ),
-      .ReadEnable ( hci_mem[i].req & hci_mem[i].wen ),
-      .ReadAddr ( hci_mem[i].add[$clog2(ActMemNumBankWords)+2-1:2] ),
-      .ReadData ( hci_mem[i].r_data ),
-      .WriteEnable ( hci_mem[i].req & ~hci_mem[i].wen ),
-      .WriteAddr ( hci_mem[i].add[$clog2(ActMemNumBankWords)+2-1:2] ),
-      .WriteData ( hci_mem[i].data ),
-      .WriteBE ( hci_mem[i].be )
-    );
+    //NOTE: For the HCI protocol, write enable is active-low
 
+    `ifdef TARGET_WL_SCM
+      // Generate standard-cell-based memory
+      register_file_1r_1w_be #(
+        .ADDR_WIDTH ( $clog2(ActMemNumBankWords) ),
+        .DATA_WIDTH ( DataWidth ),
+        .NUM_BYTE   ( DataWidth / 8 )
+      ) i_scm (
+        .clk ( clk_i ),
+        .ReadEnable ( hci_mem[i].req & hci_mem[i].wen ),
+        .ReadAddr ( hci_mem[i].add[$clog2(ActMemNumBankWords)+2-1:2] ),
+        .ReadData ( hci_mem[i].r_data ),
+        .WriteEnable ( hci_mem[i].req & ~hci_mem[i].wen ),
+        .WriteAddr ( hci_mem[i].add[$clog2(ActMemNumBankWords)+2-1:2] ),
+        .WriteData ( hci_mem[i].data ),
+        .WriteBE ( hci_mem[i].be )
+      );
+
+    `elsif TARGET_WL_SRAM
+      // Generate SRAM cut
+      tc_sram #(
+        .NumWords ( ActMemNumBankWords ),
+        .DataWidth ( DataWidth ),
+        .ByteWidth ( 32'd8 ),
+        .NumPorts ( 32'd1 ),
+        .Latency ( 32'd1 )
+      ) i_sram (
+        .clk_i ( clk_i ),
+        .rst_ni ( rst_ni ),
+        .req_i ( hci_mem[i].req ),
+        .we_i ( ~hci_mem[i].wen ),
+        .addr_i ( hci_mem[i].add[$clog2(ActMemNumBankWords)+2-1:2] ),
+        .wdata_i ( hci_mem[i].data ),
+        .be_i ( hci_mem[i].be ),
+        .rdata_o ( hci_mem[i].r_data )
+      );
+
+    `else
+      $fatal(1, "[hwpe_subsystem] ERROR: No target memory type defined (no TARGET_WL_SCM nor TARGET_WL_SRAM)");
+    `endif
   end
 
   ////////////////
