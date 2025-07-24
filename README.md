@@ -2,6 +2,8 @@
 
 *Wakelet* is a minimal cluster-like infrastructure that enhances the flexibility of an Hardware PE (HWPE) accelerator with negligible impact on area occupation and power consumption.
 
+![Wakelet architectural diagram](doc/wakelet_arch.png)
+
 Wakelet features a minimal rv32e Snitch core with private instruction and data memories that can be preloaded by the SoC through the AXI Lite interface. Once preloaded, Wakelut runs independently thanks to the built-in bootrom and instruction memory.
 Snitch configures the integrated HWPE through a register interface, and a wide AXI slave can stream data from a sensor into the activation memory of the HWPE. The AXI Lite interface can also be used to configure the employed sensor. All integrated memories are latch-based.
 
