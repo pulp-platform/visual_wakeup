@@ -17,14 +17,13 @@ variables:
   TERM: ansi
   FORCE_COLOR: 1
 
-.base:
+.default:
+  before_script:
+    # Export RISC-V GCC toolchain paths
+    - export PATH="${GCC_DIR}/default/bin:${GCC_DIR}/STARTUP:${PATH}"
   artifacts:
     when: always
     expire_in: 3 days
-
-before_script:
-  # Export RISC-V GCC toolchain paths
-  - export PATH="${GCC_DIR}/default/bin:${GCC_DIR}/STARTUP:${PATH}"
 
 stages:
   - build
@@ -34,9 +33,15 @@ stages:
 # Build #
 #########
 
+# Configure hardware parameterizations
+.hw_config: &hw_config
+  HW_CFG_DEFS_TARGS:
+    - "-t wl_scm"
+    - "-t wl_sram"
+
 # Compile hardware sources
 build-hw-vsim:
-  extends: .base
+  extends: .default
   stage: build
   script:
     - make checkout
@@ -44,24 +49,35 @@ build-hw-vsim:
     - make compile-vsim
   artifacts:
     paths: [ ".bender", "hw", "target/sim/vsim", "sw/bootrom" ]
-
-# Build testbenches
-.build-tb-template: &build-tb-template
-  extends: .base
-  stage: build
-  needs: [ build-hw-vsim ]
-  script:
-    - sim_top_level=$TB_TOP make opt-vsim
-  dependencies: [ build-hw-vsim ]
-  artifacts:
-    paths: [ ".bender", "hw", "target/sim/vsim", "sw/bootrom" ]
-
-build-tb-vsim:
-  <<: *build-tb-template
+    name: "$CI_JOB_NAME"
   parallel:
     matrix:
-      # List of testbenches to build (as found under ./test)
-      - TB_TOP: tb_wl_top
+      - <<: *hw_config
+
+# Build testbenches
+.build-tb-vsim-template: &build-tb-vsim-template
+  extends: .default
+  stage: build
+  needs:
+    - job: build-hw-vsim
+      artifacts: true
+      parallel:
+        matrix: 
+          - <<: *hw_config
+  script:
+    - sim_top_level=$TB_TOP make opt-vsim
+  artifacts:
+    paths: [ ".bender", "hw", "target/sim/vsim", "sw/bootrom" ]
+    name: "$CI_JOB_NAME"
+
+# Select the testbench (as found in `./test`) to build on top of each hardware configuration
+build-tb-vsim:
+  <<: *build-tb-vsim-template
+  parallel:
+    matrix:
+      # For now all hw configurations use the same testbench
+      - <<: *hw_config
+        TB_TOP: tb_wl_top
 
 ########
 # Test #
@@ -69,10 +85,10 @@ build-tb-vsim:
 
 # Template to compile and run software tests
 .test-template: &test-template
-  extends: .base
+  extends: .default
   stage: test
   script:
-    - echo "Running application \"$TEST\" on testbench \"$TB_TOP\""
+    - echo "Running application \"$TEST\" on testbench \"$TB_TOP\" with hw config \"$HW_CFG_DEFS\""
     - make sw/apps/$TEST.dump
     - make sw/apps/$TEST.{instr,data}_mem.bin
     - GUI=0 APP=$TEST sim_top_level=$TB_TOP make run-vsim
@@ -82,23 +98,24 @@ build-tb-vsim:
     exclude: [ "target/sim/vsim/work/**/*", "target/sim/vsim/work", "target/sim/vsim/*.wlf" ]
     expire_in: 1 week
 
-# List of tests to run on `tb_wl_top`
+# Tests to run on `tb_wl_top`
 tb_wl_top-vsim:
   <<: *test-template
-  parallel:
-    matrix:
-      - TEST: test_data_mem
-        TB_TOP: tb_wl_top
-      - TEST: test_data_mem_load_subword
-        TB_TOP: tb_wl_top
-      - TEST: test_data_mem_store_subword
-        TB_TOP: tb_wl_top
-      - TEST: test_hwpe_datamover
-        TB_TOP: tb_wl_top
-      - TEST: test_axi_lite_master
-        TB_TOP: tb_wl_top
   needs:
   - job: build-tb-vsim
+    artifacts: true
     parallel:
       matrix:
-        - TB_TOP: tb_wl_top
+      - <<: *hw_config
+        TB_TOP: tb_wl_top
+  parallel:
+    matrix:
+      # Tests to run on `tb_wl_top` on all hardware configurations
+      - TEST: 
+          - test_data_mem
+          - test_data_mem_load_subword
+          - test_data_mem_store_subword
+          - test_hwpe_datamover
+          - test_axi_lite_master
+        <<: *hw_config
+        TB_TOP: tb_wl_top

@@ -4,12 +4,22 @@
 #
 # Sergio Mazzola <smazzola@iis.ee.ethz.ch>
 
-# Common defines
+# To easily configure Wakelet hardware, also from CI:
+HW_CFG_DEFS_TARGS ?= -t wl_scm # or `-t wl_sram`
+
+#########################
+# Common to all targets #
+#########################
+
 COMMON_DEFS ?=
 # Common targets for bender
 COMMON_TARGS ?=
+COMMON_TARGS += $(HW_CFG_DEFS_TARGS)
 COMMON_TARGS += -t disable_pmcs # for Snitch
-COMMON_TARGS += -t wl_scm # -t wl_sram
+
+##################
+# RTL simulation #
+##################
 
 # Simulation defines
 SIM_DEFS  ?=
@@ -17,11 +27,19 @@ SIM_DEFS  ?=
 SIM_TARGS ?=
 SIM_TARGS += -t wl_test -t simulation
 
+#######################
+# ASIC implementation #
+#######################
+
 # Asic defines
 ASIC_DEFS ?= -D COMMON_CELLS_ASSERTS_OFF
 # Asic targets for bender
 ASIC_TARGS ?=
 ASIC_TARGS += -t asic -t synthesis
+
+##################
+# ASIC testbench #
+##################
 
 # Asic defines
 ASIC_SIM_DEFS ?= -D COMMON_CELLS_ASSERTS_OFF
