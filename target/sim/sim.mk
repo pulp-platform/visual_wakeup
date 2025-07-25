@@ -17,6 +17,9 @@ sim_top_level ?= tb_wl_top
 
 # Tooling
 QUESTA ?= questa-2022.3
+VLIB ?= $(QUESTA) vlib
+VSIM ?= $(QUESTA) vsim
+VOPT ?= $(QUESTA) vopt
 
 GUI ?= 0
 # must be an app in `sw/apps`
@@ -49,21 +52,21 @@ $(WL_SIM_DIR)/vsim/compile.tcl: $(WL_ROOT)/Bender.lock $(WL_ROOT)/Bender.yml $(W
 compile-vsim: $(sim_vsim_lib)/.hw_compiled
 $(sim_vsim_lib)/.hw_compiled: $(WL_SIM_DIR)/vsim/compile.tcl $(WL_ROOT)/.bender/.checkout_stamp $(SIM_SRC_FILES)
 	cd $(WL_SIM_DIR)/vsim && \
-	$(QUESTA) vlib $(sim_vsim_lib) && \
-	$(QUESTA) vsim -c -do 'quit -code [source $<]' && \
+	$(VLIB) $(sim_vsim_lib) && \
+	$(VSIM) -c -do 'quit -code [source $<]' && \
 	date > $@
 
 .PHONY: opt-vsim
 opt-vsim: $(sim_vsim_lib)/$(sim_top_level)_optimized/.tb_opt_compiled
 $(sim_vsim_lib)/$(sim_top_level)_optimized/.tb_opt_compiled: $(sim_vsim_lib)/.hw_compiled
 	cd $(WL_SIM_DIR)/vsim && \
-	$(QUESTA) vopt $(SIM_WL_VOPT_ARGS) -work $(sim_vsim_lib) $(sim_top_level) -o $(sim_top_level)_optimized +acc && \
+	$(VOPT) $(SIM_WL_VOPT_ARGS) -work $(sim_vsim_lib) $(sim_top_level) -o $(sim_top_level)_optimized +acc && \
 	date > $@
 
 .PHONY: run-vsim
 run-vsim: $(sim_vsim_lib)/$(sim_top_level)_optimized/.tb_opt_compiled
 	cd $(WL_SIM_DIR)/vsim && \
-	$(QUESTA) vsim $(SIM_WL_VSIM_ARGS) -lib $(sim_vsim_lib) \
+	$(VSIM) $(SIM_WL_VSIM_ARGS) -lib $(sim_vsim_lib) \
 	$(sim_top_level)_optimized \
 	-do 'set GUI $(GUI); source $(WL_SIM_DIR)/vsim/tb_wl_top.tcl'
 

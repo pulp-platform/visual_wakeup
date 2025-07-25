@@ -15,7 +15,7 @@ Wakelet is developed as part of the PULP project, a joint effort between ETH Zur
 
 - RISC-V GCC toolchain (tested with `riscv32-unknown-elf-gcc (2021-10-30 PULP GCC v2.5.0) 9.2.0`): https://github.com/pulp-platform/pulp-riscv-gnu-toolchain. The make flow tries to automatically find the install path of `riscv32-unknown-elf-gcc`. Alternatively, you can specify it manually in `sw/sw.mk` or by exporting the env variable `GCC_ROOT=path/to/bin/dir`.
 - Bender (tested with `bender 0.28.2`): https://github.com/pulp-platform/bender. Specified in `Makefile` or through the env variable `BENDER`.
-- For RTL simulation: QuestaSim (tested with `questa-2022.3`). Specified in `target/sim/sim.mk` or through the env variable `QUESTA`.
+- For RTL simulation: QuestaSim (tested with `QuestaSim 2022.3`). You can specify your QuestaSim installation in `target/sim/sim.mk`, through the env variables `VLIB`, `VSIM`, and `VOPT`.
 
 ## Getting started
 
