@@ -2,6 +2,8 @@
 
 *Wakelet* is a minimal cluster-like infrastructure that enhances the flexibility of an Hardware PE (HWPE) accelerator with negligible impact on area occupation and power consumption.
 
+![Wakelet architectural diagram](doc/wakelet_arch.png)
+
 Wakelet features a minimal rv32e Snitch core with private instruction and data memories that can be preloaded by the SoC through the AXI Lite interface. Once preloaded, Wakelut runs independently thanks to the built-in bootrom and instruction memory.
 Snitch configures the integrated HWPE through a register interface, and a wide AXI slave can stream data from a sensor into the activation memory of the HWPE. The AXI Lite interface can also be used to configure the employed sensor. All integrated memories are latch-based.
 
@@ -13,7 +15,7 @@ Wakelet is developed as part of the PULP project, a joint effort between ETH Zur
 
 - RISC-V GCC toolchain (tested with `riscv32-unknown-elf-gcc (2021-10-30 PULP GCC v2.5.0) 9.2.0`): https://github.com/pulp-platform/pulp-riscv-gnu-toolchain. The make flow tries to automatically find the install path of `riscv32-unknown-elf-gcc`. Alternatively, you can specify it manually in `sw/sw.mk` or by exporting the env variable `GCC_ROOT=path/to/bin/dir`.
 - Bender (tested with `bender 0.28.2`): https://github.com/pulp-platform/bender. Specified in `Makefile` or through the env variable `BENDER`.
-- For RTL simulation: QuestaSim (tested with `questa-2022.3`). Specified in `target/sim/sim.mk` or through the env variable `QUESTA`.
+- For RTL simulation: QuestaSim (tested with `QuestaSim 2022.3`). You can specify your QuestaSim installation in `target/sim/sim.mk`, through the env variables `VLIB`, `VSIM`, and `VOPT`.
 
 ## Getting started
 
@@ -35,11 +37,12 @@ make sw/apps/$APP.{dump,instr_mem.bin,data_mem.bin}
 ```
 
 ### Hardware
-To run a first simulation of the Wakelet unit, first clone the required hardware dependencies. If prompted with different dependency versions to select, refer to the ones already specified in `Bender.lock`. From the project root:
+To run a first simulation of the Wakelet unit, first clone the required hardware dependencies. From the project root:
 ```bash
 make checkout
 ```
 If you do not have access to the internal repository for the Wakelet ASIC target, you will get a warning from Bender about `wakelet-pd`; this is expected.
+If you change `Bender.yml`, make sure to run first `bender update`.
 
 Then, generate the compilation script for QuestaSim and execute it:
 ```bash
