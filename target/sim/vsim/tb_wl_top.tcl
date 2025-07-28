@@ -346,8 +346,14 @@ if {$GUI == 1} {
     add wave -noupdate -group i_hwpe_subsystem -group params /tb_wl_top/dut/i_hwpe_subsystem/HciArbConfig
     add wave -noupdate -group i_hwpe_subsystem /tb_wl_top/dut/i_hwpe_subsystem/clk_i
     add wave -noupdate -group i_hwpe_subsystem /tb_wl_top/dut/i_hwpe_subsystem/rst_ni
-    for {set i 0} {$i < 16} {incr i} {
-        add wave -noupdate -group i_hwpe_subsystem -group activation_scm -label bank_$i /tb_wl_top/dut/i_hwpe_subsystem/banks_gen[$i]/i_scm/MemContentxDP
+    for {set i 0} {$i < [examine -radix dec /tb_wl_top/dut/i_hwpe_subsystem/ActMemNumBanks]} {incr i} {
+        if {[examine -nocomplain /tb_wl_top/dut/i_hwpe_subsystem/banks_gen[$i]/i_scm/MemContentxDP] != ""} {
+            # SCM
+            add wave -noupdate -group i_hwpe_subsystem -group activation_mem -label bank_$i /tb_wl_top/dut/i_hwpe_subsystem/banks_gen[$i]/i_scm/MemContentxDP
+        } elseif {[examine -nocomplain /tb_wl_top/dut/i_hwpe_subsystem/banks_gen[$i]/i_sram/sram] != ""} {
+            # SRAM
+            add wave -noupdate -group i_hwpe_subsystem -group activation_mem -label bank_$i /tb_wl_top/dut/i_hwpe_subsystem/banks_gen[$i]/i_sram/sram
+        }
     }
     add wave -noupdate -group i_hwpe_subsystem -group periph_slave /tb_wl_top/dut/i_hwpe_subsystem/periph_slave/clk
     add wave -noupdate -group i_hwpe_subsystem -group periph_slave /tb_wl_top/dut/i_hwpe_subsystem/periph_slave/req
@@ -480,7 +486,13 @@ if {$GUI == 1} {
     add wave -noupdate -group i_data_mem_mux /tb_wl_top/dut/i_data_mem_mux/slv_rsp_q_ready
     add wave -noupdate -group i_data_mem /tb_wl_top/dut/i_data_mem/clk_i
     add wave -noupdate -group i_data_mem /tb_wl_top/dut/i_data_mem/rst_ni
-    add wave -noupdate -group i_data_mem -color Gold -label {Memory content} /tb_wl_top/dut/i_data_mem/i_scm/MemContentxDP
+    if {[examine -nocomplain /tb_wl_top/dut/i_data_mem/i_scm/MemContentxDP] != ""} {
+        # SCM
+        add wave -noupdate -group i_data_mem -color Gold -label {Memory content} /tb_wl_top/dut/i_data_mem/i_scm/MemContentxDP
+    } elseif {[examine -nocomplain /tb_wl_top/dut/i_data_mem/i_sram/sram] != ""} {
+        # SRAM
+        add wave -noupdate -group i_data_mem -color Gold -label {Memory content} /tb_wl_top/dut/i_data_mem/i_sram/sram
+    }
     add wave -noupdate -group i_data_mem /tb_wl_top/dut/i_data_mem/slv_req_i
     add wave -noupdate -group i_data_mem /tb_wl_top/dut/i_data_mem/slv_rsp_o
     add wave -noupdate -group i_data_mem /tb_wl_top/dut/i_data_mem/rw_idx
@@ -500,7 +512,13 @@ if {$GUI == 1} {
     add wave -noupdate -group i_instr_mem_r_mux /tb_wl_top/dut/i_instr_mem_r_mux/oup_ready_i
     add wave -noupdate -group i_instr_mem /tb_wl_top/dut/i_instr_mem/clk_i
     add wave -noupdate -group i_instr_mem /tb_wl_top/dut/i_instr_mem/rst_ni
-    add wave -noupdate -group i_instr_mem -color Gold -label {Memory content} /tb_wl_top/dut/i_instr_mem/i_scm/MemContentxDP
+    if {[examine -nocomplain /tb_wl_top/dut/i_instr_mem/i_scm/MemContentxDP] != ""} {
+        # SCM
+        add wave -noupdate -group i_instr_mem -color Gold -label {Memory content} /tb_wl_top/dut/i_instr_mem/i_scm/MemContentxDP
+    } elseif {[examine -nocomplain /tb_wl_top/dut/i_instr_mem/i_sram/sram] != ""} {
+        # SRAM
+        add wave -noupdate -group i_instr_mem -color Gold -label {Memory content} /tb_wl_top/dut/i_instr_mem/i_sram/sram
+    }
     add wave -noupdate -group i_instr_mem /tb_wl_top/dut/i_instr_mem/rw_gnt_o
     add wave -noupdate -group i_instr_mem /tb_wl_top/dut/i_instr_mem/r_en_i
     add wave -noupdate -group i_instr_mem /tb_wl_top/dut/i_instr_mem/r_addr_i
@@ -781,6 +799,20 @@ if {$GUI == 1} {
     add wave -noupdate -group i_bus_instr_mem_axi_to_mem -group mem /tb_wl_top/dut/i_bus_instr_mem_axi_to_mem/mem_we_o
     add wave -noupdate -group i_bus_instr_mem_axi_to_mem -group mem /tb_wl_top/dut/i_bus_instr_mem_axi_to_mem/mem_rvalid_i
     add wave -noupdate -group i_bus_instr_mem_axi_to_mem -group mem /tb_wl_top/dut/i_bus_instr_mem_axi_to_mem/mem_rdata_i
+    add wave -noupdate -group i_bus_core_data_demux_ext_reqrsp_to_axi /tb_wl_top/dut/i_bus_core_data_demux_ext_reqrsp_to_axi/clk_i
+    add wave -noupdate -group i_bus_core_data_demux_ext_reqrsp_to_axi /tb_wl_top/dut/i_bus_core_data_demux_ext_reqrsp_to_axi/rst_ni
+    add wave -noupdate -group i_bus_core_data_demux_ext_reqrsp_to_axi /tb_wl_top/dut/i_bus_core_data_demux_ext_reqrsp_to_axi/user_i
+    add wave -noupdate -group i_bus_core_data_demux_ext_reqrsp_to_axi /tb_wl_top/dut/i_bus_core_data_demux_ext_reqrsp_to_axi/reqrsp_req
+    add wave -noupdate -group i_bus_core_data_demux_ext_reqrsp_to_axi /tb_wl_top/dut/i_bus_core_data_demux_ext_reqrsp_to_axi/reqrsp_rsp
+    add wave -noupdate -group i_bus_core_data_demux_ext_reqrsp_to_axi /tb_wl_top/dut/i_bus_core_data_demux_ext_reqrsp_to_axi/axi_req
+    add wave -noupdate -group i_bus_core_data_demux_ext_reqrsp_to_axi /tb_wl_top/dut/i_bus_core_data_demux_ext_reqrsp_to_axi/axi_rsp
+    add wave -noupdate -group i_bus_core_data_demux_ext_axi_to_axi_lite /tb_wl_top/dut/i_bus_core_data_demux_ext_axi_to_axi_lite/clk_i
+    add wave -noupdate -group i_bus_core_data_demux_ext_axi_to_axi_lite /tb_wl_top/dut/i_bus_core_data_demux_ext_axi_to_axi_lite/rst_ni
+    add wave -noupdate -group i_bus_core_data_demux_ext_axi_to_axi_lite /tb_wl_top/dut/i_bus_core_data_demux_ext_axi_to_axi_lite/testmode_i
+    add wave -noupdate -group i_bus_core_data_demux_ext_axi_to_axi_lite /tb_wl_top/dut/i_bus_core_data_demux_ext_axi_to_axi_lite/full_req
+    add wave -noupdate -group i_bus_core_data_demux_ext_axi_to_axi_lite /tb_wl_top/dut/i_bus_core_data_demux_ext_axi_to_axi_lite/full_resp
+    add wave -noupdate -group i_bus_core_data_demux_ext_axi_to_axi_lite /tb_wl_top/dut/i_bus_core_data_demux_ext_axi_to_axi_lite/lite_req
+    add wave -noupdate -group i_bus_core_data_demux_ext_axi_to_axi_lite /tb_wl_top/dut/i_bus_core_data_demux_ext_axi_to_axi_lite/lite_resp
     TreeUpdate [SetDefaultTree]
     quietly wave cursor active 1
     configure wave -namecolwidth 332

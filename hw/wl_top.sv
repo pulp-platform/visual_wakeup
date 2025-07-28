@@ -384,7 +384,7 @@ module wl_top
     .AxiIdWidth ( 32'd1 ),
     .AxiUserWidth ( 32'd1 ),
     .ID ( 0 )
-  ) i_bus_core_data_demux_ext_axi_out (
+  ) i_bus_core_data_demux_ext_reqrsp_to_axi (
     .clk_i ( clk_i ),
     .rst_ni ( rst_ni ),
     .user_i ( 1'b0 ),
@@ -407,7 +407,7 @@ module wl_top
     .AXI_MAX_READ_TXNS ( 32'd1 ),
     .FALL_THROUGH ( 1'b1 ),
     .FULL_BW ( 0 )
-  ) i_bus_core_data_demux_ext_axi_lite_out (
+  ) i_bus_core_data_demux_ext_axi_to_axi_lite (
     .clk_i ( clk_i ),
     .rst_ni ( rst_ni ),
     .testmode_i ( 1'b0 ),
