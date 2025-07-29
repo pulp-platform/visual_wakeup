@@ -222,7 +222,7 @@ module hwpe_subsystem #(
 
     //NOTE: For the HCI protocol, write enable is active-low
 
-    `ifdef TARGET_WL_SCM
+    `ifdef TARGET_WL_ACT_SCM
       // Generate standard-cell-based memory
       register_file_1r_1w_be #(
         .ADDR_WIDTH ( $clog2(ActMemNumBankWords) ),
@@ -239,7 +239,7 @@ module hwpe_subsystem #(
         .WriteBE ( hci_mem[i].be )
       );
 
-    `elsif TARGET_WL_SRAM
+    `elsif TARGET_WL_ACT_SRAM
       // Generate SRAM cut
       tc_sram #(
         .NumWords ( ActMemNumBankWords ),

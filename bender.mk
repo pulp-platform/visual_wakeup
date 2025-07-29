@@ -4,17 +4,15 @@
 #
 # Sergio Mazzola <smazzola@iis.ee.ethz.ch>
 
-# To easily configure Wakelet hardware, also from CI:
-HW_CFG_DEFS_TARGS ?= -t wl_scm # or `-t wl_sram`
-
 #########################
 # Common to all targets #
 #########################
 
 COMMON_DEFS ?=
+COMMON_DEFS += $(HW_CFG_DEFS)
 # Common targets for bender
 COMMON_TARGS ?=
-COMMON_TARGS += $(HW_CFG_DEFS_TARGS)
+COMMON_TARGS += $(HW_CFG_TARGS)
 COMMON_TARGS += -t disable_pmcs # for Snitch
 
 ##################

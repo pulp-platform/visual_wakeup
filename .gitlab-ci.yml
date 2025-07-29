@@ -19,78 +19,36 @@ variables:
 
 .default:
   before_script:
-    # Export RISC-V GCC toolchain paths
+    # RISC-V GCC toolchain paths
     - export PATH="${GCC_DIR}/default/bin:${GCC_DIR}/STARTUP:${PATH}"
   artifacts:
     when: always
     expire_in: 3 days
 
-stages:
-  - build
-  - test
-
-#########
-# Build #
-#########
-
-# Configure hardware parameterizations
-.hw_config: &hw_config
-  HW_CFG_DEFS_TARGS:
-    - "-t wl_scm"
-    - "-t wl_sram"
-
-# Compile hardware sources
-build-hw-vsim:
-  extends: .default
-  stage: build
-  script:
-    - make checkout
-    - make snitch_bootrom
-    - make compile-vsim
-  artifacts:
-    paths: [ ".bender", "hw", "target/sim/vsim", "sw/bootrom" ]
-    name: "$CI_JOB_NAME"
-  parallel:
-    matrix:
-      - <<: *hw_config
-
-# Build testbenches
-.build-tb-vsim-template: &build-tb-vsim-template
-  extends: .default
-  stage: build
-  needs:
-    - job: build-hw-vsim
-      artifacts: true
-      parallel:
-        matrix: 
-          - <<: *hw_config
-  script:
-    - sim_top_level=$TB_TOP make opt-vsim
-  artifacts:
-    paths: [ ".bender", "hw", "target/sim/vsim", "sw/bootrom" ]
-    name: "$CI_JOB_NAME"
-
-# Select the testbench (as found in `./test`) to build on top of each hardware configuration
-build-tb-vsim:
-  <<: *build-tb-vsim-template
-  parallel:
-    matrix:
-      # For now all hw configurations use the same testbench
-      - <<: *hw_config
-        TB_TOP: tb_wl_top
-
-########
-# Test #
-########
+#NOTE: This simple one-stage CI recompiles the same hardware multiple times for each test: this is
+# not ideal but grants the simulation of the correct hardware config, as the current GitLab version
+# (16.0.0) does not support proper artifact propagation with parallel:matrix jobs.
 
 # Template to compile and run software tests
 .test-template: &test-template
   extends: .default
-  stage: test
   script:
-    - echo "Running application \"$TEST\" on testbench \"$TB_TOP\" with hw config \"$HW_CFG_DEFS\""
+    # Print config
+    - echo "Application = \"$TEST\""
+    - echo "Testbench = \"$TB_TOP\""
+    - echo "Hardware configuration ="
+    - echo "  DATA_MEM_TYPE = \"$DATA_MEM_TYPE\""
+    - echo "  INSTR_MEM_TYPE = \"$INSTR_MEM_TYPE\""
+    - echo "  ACT_MEM_TYPE = \"$ACT_MEM_TYPE\""
+    # Compile hardware
+    - make checkout
+    - make snitch_bootrom
+    - make compile-vsim
+    - sim_top_level=$TB_TOP make opt-vsim
+    # Compile software
     - make sw/apps/$TEST.dump
     - make sw/apps/$TEST.{instr,data}_mem.bin
+    # Run simulation
     - GUI=0 APP=$TEST sim_top_level=$TB_TOP make run-vsim
     - utils/vsim_ret.sh target/sim/vsim/transcript
   artifacts:
@@ -98,24 +56,30 @@ build-tb-vsim:
     exclude: [ "target/sim/vsim/work/**/*", "target/sim/vsim/work", "target/sim/vsim/*.wlf" ]
     expire_in: 1 week
 
-# Tests to run on `tb_wl_top`
-tb_wl_top-vsim:
+# Define hardware configs, tb, and tests to run on them
+test-vsim:
   <<: *test-template
-  needs:
-  - job: build-tb-vsim
-    artifacts: true
-    parallel:
-      matrix:
-      - <<: *hw_config
-        TB_TOP: tb_wl_top
   parallel:
     matrix:
-      # Tests to run on `tb_wl_top` on all hardware configurations
-      - TEST: 
+      # Use SCM memory, run all tests
+      - DATA_MEM_TYPE: scm
+        INSTR_MEM_TYPE: scm
+        ACT_MEM_TYPE: scm
+        TB_TOP: tb_wl_top
+        TEST: 
           - test_data_mem
           - test_data_mem_load_subword
           - test_data_mem_store_subword
           - test_hwpe_datamover
           - test_axi_lite_master
-        <<: *hw_config
+      # Use SRAM cuts, run all tests
+      - DATA_MEM_TYPE: sram
+        INSTR_MEM_TYPE: sram
+        ACT_MEM_TYPE: sram
         TB_TOP: tb_wl_top
+        TEST: 
+          - test_data_mem
+          - test_data_mem_load_subword
+          - test_data_mem_store_subword
+          - test_hwpe_datamover
+          - test_axi_lite_master

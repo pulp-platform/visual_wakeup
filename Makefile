@@ -4,6 +4,7 @@
 #
 # Sergio Mazzola <smazzola@iis.ee.ethz.ch>
 
+include config.mk
 include bender.mk
 
 WL_ROOT = $(shell pwd)

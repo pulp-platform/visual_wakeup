@@ -49,7 +49,7 @@ module core_instr_mem #(
   // SRAM has only one port, shared for read and write: we give priority to read requests, while
   // writes are masked as long as there is a read requested or in progress.
 
-  `ifdef TARGET_WL_SCM
+  `ifdef TARGET_WL_INSTR_SCM
     // Generate standard-cell-based memory
     register_file_1r_1w #(
       .ADDR_WIDTH ( IdxWidth ),
@@ -78,7 +78,7 @@ module core_instr_mem #(
       endfunction
     `endif
 
-  `elsif TARGET_WL_SRAM
+  `elsif TARGET_WL_INSTR_SRAM
     logic w_en_filter;
     assign w_en_filter = w_en_i & ~mem_r_en & ~r_en_i; // no read in progress or requested
 
@@ -104,7 +104,7 @@ module core_instr_mem #(
     `FFARN(w_ack_o, w_en_filter, 1'b0, clk_i, rst_ni)
 
   `else
-    $fatal(1, "[core_instr_mem] ERROR: No target memory type defined (no TARGET_WL_SCM nor TARGET_WL_SRAM)");
+    $fatal(1, "[core_instr_mem] ERROR: No target memory type defined.");
   `endif
 
   ///////////////////////

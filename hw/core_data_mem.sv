@@ -32,7 +32,7 @@ module core_data_mem #(
   // Take the IdxWidth MSBs (i.e., discard the byte offset)
   assign rw_idx = slv_req_i.q.addr[AddrWidth-1:AddrWidth-IdxWidth];
 
-  `ifdef TARGET_WL_SCM
+  `ifdef TARGET_WL_DATA_SCM
     // Generate standard-cell-based memory
     register_file_1r_1w_be #(
       .ADDR_WIDTH ( IdxWidth ),
@@ -60,7 +60,7 @@ module core_data_mem #(
       endfunction
     `endif
 
-  `elsif TARGET_WL_SRAM
+  `elsif TARGET_WL_DATA_SRAM
     // Generate SRAM cut
     tc_sram #(
       .NumWords ( 2 ** IdxWidth ),
@@ -80,7 +80,7 @@ module core_data_mem #(
     );
 
   `else
-    $fatal(1, "[core_data_mem] ERROR: No target memory type defined (no TARGET_WL_SCM nor TARGET_WL_SRAM)");
+    $fatal(1, "[core_data_mem] ERROR: No target memory type defined.");
   `endif
 
   //////////////////////////////
