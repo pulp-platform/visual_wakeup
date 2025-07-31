@@ -13,13 +13,27 @@ CC      := $(GCC_ROOT)/riscv32-unknown-elf-gcc
 OBJCOPY := $(GCC_ROOT)/riscv32-unknown-elf-objcopy
 OBJDUMP := $(GCC_ROOT)/riscv32-unknown-elf-objdump
 
+################################
+# Hw parameters from config.mk #
+################################
+
+# Add defines to compilation
+WL_SW_HWDEFS := -DDATA_MEM_NUMBYTES=$(shell expr $(DATA_MEM_NUMWORDS) \* 4)
+WL_SW_HWDEFS += -DINSTR_MEM_NUMBYTES=$(shell expr $(INSTR_MEM_NUMWORDS) \* 4)
+
+WL_SW_HWDEFS += -DACT_MEM_NUMBANKS=$(ACT_MEM_NUMBANKS)
+WL_SW_HWDEFS += -DACT_MEM_NUMBANKWORDS=$(ACT_MEM_NUMBANKWORDS)
+WL_SW_HWDEFS += -DACT_MEM_WORDWIDTH=$(ACT_MEM_WORDWIDTH)
+WL_SW_HWDEFS += -DACT_MEM_NUMBYTES=$(shell expr $(ACT_MEM_NUMBANKS) \* $(ACT_MEM_NUMBANKWORDS) \* $(ACT_MEM_WORDWIDTH) / 8)
+
+
 ##########
 # Set up #
 ##########
 
 MARCH ?= rv32em
 
-WL_SW_FLAGS += -DOT_PLATFORM_RV32 -march=$(MARCH) -mabi=ilp32e -mstrict-align -O2 -Wall -Wextra -static -ffunction-sections -fdata-sections -fuse-linker-plugin -flto -Wl,-flto
+WL_SW_FLAGS += -DOT_PLATFORM_RV32 -march=$(MARCH) -mabi=ilp32e -mstrict-align -O2 -Wall -Wextra -static -ffunction-sections -fdata-sections -fuse-linker-plugin -flto -Wl,-flto $(WL_SW_HWDEFS)
 CC_LD_FLAGS ?= $(WL_SW_FLAGS) -nostartfiles -Wl,--gc-sections
 CC_FLAGS ?= $(WL_SW_FLAGS) -ggdb -mcmodel=medany -mexplicit-relocs -fno-builtin -fverbose-asm -pipe -MMD -MP
 
@@ -80,7 +94,7 @@ $(WL_SW_DIR)/bootrom/snitch_bootrom.elf: $(WL_SW_DIR)/bootrom/snitch_bootrom.ld 
 # Linker scripts
 .PRECIOUS: %.ld
 %.ld: %.ld.c
-	$(CC) $(WL_SW_INCL) -P -E $< -o $@
+	$(CC) $(WL_SW_INCL) $(WL_SW_HWDEFS) -P -E $< -o $@
 
 ##################################
 # Separate binaries for flashing #

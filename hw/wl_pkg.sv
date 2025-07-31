@@ -24,12 +24,12 @@ package wl_pkg;
   localparam int BootromAddrWidth = (BootromNumBytes > 1) ? $clog2(BootromNumBytes) : 1;
 
   // Core Instruction memory
-  localparam int InstrMemNumWords = 128;
+  localparam int InstrMemNumWords = `ifdef INSTR_MEM_NUMWORDS `INSTR_MEM_NUMWORDS `else 0 `endif;
   localparam int InstrMemNumBytes = InstrMemNumWords * (DataWidth / 8);
   localparam int InstrMemAddrWidth = (InstrMemNumBytes > 1) ? $clog2(InstrMemNumBytes) : 1;
 
   // Core Data memory
-  localparam int DataMemNumWords = 128;
+  localparam int DataMemNumWords = `ifdef DATA_MEM_NUMWORDS `DATA_MEM_NUMWORDS `else 0 `endif;
   localparam int DataMemNumBytes = DataMemNumWords * (DataWidth / 8);
   localparam int DataMemAddrWidth = (DataMemNumBytes > 1) ? $clog2(DataMemNumBytes) : 1;
 
@@ -43,9 +43,9 @@ package wl_pkg;
   localparam int HwpeCfgNumBytes = 32'h0000_1000;
   // check: hwpe-datamover-example/rtl/datamover_package.sv
   // Activation memory is private to HWPE (not addressable by the core, so not in memory map)
-  localparam int ActMemNumBanks = 16;
-  localparam int ActMemNumBankWords = 128;
-  localparam int ActMemWordWidth = DataWidth;
+  localparam int ActMemNumBanks = `ifdef ACT_MEM_NUMBANKS `ACT_MEM_NUMBANKS `else 0 `endif;
+  localparam int ActMemNumBankWords = `ifdef ACT_MEM_NUMBANKWORDS `ACT_MEM_NUMBANKWORDS `else 0 `endif;
+  localparam int ActMemWordWidth = `ifdef ACT_MEM_WORDWIDTH `ACT_MEM_WORDWIDTH `else 0 `endif;
 
   ///////////
   // Types //

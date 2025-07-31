@@ -16,7 +16,12 @@ DATA_MEM_TYPE ?= scm
 INSTR_MEM_TYPE ?= scm
 ACT_MEM_TYPE ?= scm
 
+DATA_MEM_NUMWORDS ?= 128
+INSTR_MEM_NUMWORDS ?= 128
 
+ACT_MEM_NUMBANKS ?= 16
+ACT_MEM_NUMBANKWORDS ?= 128
+ACT_MEM_WORDWIDTH ?= 32 # in bits
 
 #########################
 # Parameters generation #
@@ -33,6 +38,7 @@ else ifeq ($(DATA_MEM_TYPE), sram)
 else
 	$(error Invalid DATA_MEM_TYPE value: $(DATA_MEM_TYPE))
 endif
+HW_CFG_DEFS += -D DATA_MEM_NUMWORDS=$(DATA_MEM_NUMWORDS)
 
 ifeq ($(INSTR_MEM_TYPE), scm)
 	HW_CFG_TARGS += -t wl_instr_scm
@@ -41,6 +47,7 @@ else ifeq ($(INSTR_MEM_TYPE), sram)
 else
 	$(error Invalid INSTR_MEM_TYPE value: $(INSTR_MEM_TYPE))
 endif
+HW_CFG_DEFS += -D INSTR_MEM_NUMWORDS=$(INSTR_MEM_NUMWORDS)
 
 ifeq ($(ACT_MEM_TYPE), scm)
 	HW_CFG_TARGS += -t wl_act_scm
@@ -49,3 +56,6 @@ else ifeq ($(ACT_MEM_TYPE), sram)
 else
 	$(error Invalid ACT_MEM_TYPE value: $(ACT_MEM_TYPE))
 endif
+HW_CFG_DEFS += -D ACT_MEM_NUMBANKS=$(ACT_MEM_NUMBANKS)
+HW_CFG_DEFS += -D ACT_MEM_NUMBANKWORDS=$(ACT_MEM_NUMBANKWORDS)
+HW_CFG_DEFS += -D ACT_MEM_WORDWIDTH=$(ACT_MEM_WORDWIDTH)
