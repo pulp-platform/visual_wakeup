@@ -16,14 +16,14 @@ module hwpe_subsystem #(
   parameter int unsigned ActMemNumBankWords = 128,
   parameter int unsigned ActMemWordWidth = DataWidth,
   // AXI channels
-  parameter type axi_aw_wide_chan_t = logic,
-  parameter type  axi_w_wide_chan_t = logic,
-  parameter type  axi_b_wide_chan_t = logic,
-  parameter type axi_ar_wide_chan_t = logic,
-  parameter type  axi_r_wide_chan_t = logic,
+  parameter type axi_aw_chan_t = logic,
+  parameter type  axi_w_chan_t = logic,
+  parameter type  axi_b_chan_t = logic,
+  parameter type axi_ar_chan_t = logic,
+  parameter type  axi_r_chan_t = logic,
   // AXI req & resp
-  parameter type axi_wide_req_t  = logic,
-  parameter type axi_wide_resp_t = logic,
+  parameter type axi_req_t  = logic,
+  parameter type axi_resp_t = logic,
   // Dependent parameters: do not modify!
   localparam int unsigned HwpeDataWidth = DataWidth * WidePortFact,
   parameter int unsigned ActMemAddrWidth = $clog2(ActMemNumBankWords) + 2 // bank 4-byte words + 2 LSBs for bytes
@@ -31,8 +31,8 @@ module hwpe_subsystem #(
   input  logic clk_i,
   input  logic rst_ni,
   // Sensor interface (AXI slave)
-  input  axi_wide_req_t  axi_wide_slv_req_i,
-  output axi_wide_resp_t axi_wide_slv_rsp_o,
+  input  axi_req_t  axi_slv_req_i,
+  output axi_resp_t axi_slv_rsp_o,
   // Peripheral slave port
   hwpe_ctrl_intf_periph.slave periph_slave
 );
@@ -88,7 +88,7 @@ module hwpe_subsystem #(
 
   /* Interconnect */
 
-  // - 2 wide ports (accelerator + sensor)
+  // - 2 arbitrated ports (accelerator + sensor)
   // - routing of those ports to memory banks + arbitration
   // - ActMemNumBanks on the slave side
 
@@ -131,18 +131,18 @@ module hwpe_subsystem #(
   //////////////////////
 
   adapter_axi2hci #(
-    .axi_aw_chan_t ( axi_aw_wide_chan_t ),
-    .axi_w_chan_t ( axi_w_wide_chan_t ),
-    .axi_b_chan_t ( axi_b_wide_chan_t ),
-    .axi_ar_chan_t ( axi_ar_wide_chan_t ),
-    .axi_r_chan_t ( axi_r_wide_chan_t ),
-    .axi_req_t ( axi_wide_req_t ),
-    .axi_resp_t ( axi_wide_resp_t )
+    .axi_aw_chan_t ( axi_aw_chan_t ),
+    .axi_w_chan_t ( axi_w_chan_t ),
+    .axi_b_chan_t ( axi_b_chan_t ),
+    .axi_ar_chan_t ( axi_ar_chan_t ),
+    .axi_r_chan_t ( axi_r_chan_t ),
+    .axi_req_t ( axi_req_t ),
+    .axi_resp_t ( axi_resp_t )
   ) i_axi2hci (
     .clk_i ( clk_i ),
     .rst_ni ( rst_ni ),
-    .axi_slave_req_i ( axi_wide_slv_req_i ),
-    .axi_slave_resp_o ( axi_wide_slv_rsp_o ),
+    .axi_slave_req_i ( axi_slv_req_i ),
+    .axi_slave_resp_o ( axi_slv_rsp_o ),
     .tcdm_master ( hci_hwpe[1] )
   );
 

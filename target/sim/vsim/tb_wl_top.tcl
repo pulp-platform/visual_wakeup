@@ -27,6 +27,8 @@ if {$GUI == 1} {
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::ActMemNumBanks
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::ActMemNumBankWords
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::ActMemWordWidth
+    add wave -noupdate -group {params (wl_pkg)} /wl_pkg::AxiLiteAddrWidth
+    add wave -noupdate -group {params (wl_pkg)} /wl_pkg::AxiLiteDataWidth
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::AxiAddrWidth
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::AxiDataWidth
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::AxiSlvIdWidth
@@ -60,8 +62,8 @@ if {$GUI == 1} {
     add wave -noupdate -group {wl_top itf} /tb_wl_top/dut/axi_lite_mst_rsp_i
     add wave -noupdate -group {wl_top itf} /tb_wl_top/dut/irq_i
     add wave -noupdate -group {wl_top itf} /tb_wl_top/dut/eoc_o
-    add wave -noupdate -group {wl_top itf} /tb_wl_top/dut/axi_wide_slv_req_i
-    add wave -noupdate -group {wl_top itf} /tb_wl_top/dut/axi_wide_slv_rsp_o
+    add wave -noupdate -group {wl_top itf} /tb_wl_top/dut/axi_slv_req_i
+    add wave -noupdate -group {wl_top itf} /tb_wl_top/dut/axi_slv_rsp_o
     add wave -noupdate -divider {Core & HWPE}
     add wave -noupdate -group i_core_subsystem /tb_wl_top/dut/i_core_subsystem/clk_i
     add wave -noupdate -group i_core_subsystem /tb_wl_top/dut/i_core_subsystem/rst_ni
@@ -366,8 +368,8 @@ if {$GUI == 1} {
     add wave -noupdate -group i_hwpe_subsystem -group periph_slave /tb_wl_top/dut/i_hwpe_subsystem/periph_slave/r_data
     add wave -noupdate -group i_hwpe_subsystem -group periph_slave /tb_wl_top/dut/i_hwpe_subsystem/periph_slave/r_valid
     add wave -noupdate -group i_hwpe_subsystem -group periph_slave /tb_wl_top/dut/i_hwpe_subsystem/periph_slave/r_id
-    add wave -noupdate -group i_hwpe_subsystem /tb_wl_top/dut/i_hwpe_subsystem/axi_wide_slv_req_i
-    add wave -noupdate -group i_hwpe_subsystem /tb_wl_top/dut/i_hwpe_subsystem/axi_wide_slv_rsp_o
+    add wave -noupdate -group i_hwpe_subsystem /tb_wl_top/dut/i_hwpe_subsystem/axi_slv_req_i
+    add wave -noupdate -group i_hwpe_subsystem /tb_wl_top/dut/i_hwpe_subsystem/axi_slv_rsp_o
     add wave -noupdate -group i_hwpe_subsystem /tb_wl_top/dut/i_hwpe_subsystem/tcdm_req
     add wave -noupdate -group i_hwpe_subsystem /tb_wl_top/dut/i_hwpe_subsystem/tcdm_gnt
     add wave -noupdate -group i_hwpe_subsystem /tb_wl_top/dut/i_hwpe_subsystem/tcdm_add

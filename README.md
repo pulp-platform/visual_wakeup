@@ -5,7 +5,7 @@
 ![Wakelet architectural diagram](doc/wakelet_arch.png)
 
 Wakelet features a minimal rv32e Snitch core with private instruction and data memories that can be preloaded by the SoC through the AXI Lite interface. Once preloaded, Wakelut runs independently thanks to the built-in bootrom and instruction memory.
-Snitch configures the integrated HWPE through a register interface, and a wide AXI slave can stream data from a sensor into the activation memory of the HWPE. The AXI Lite interface can also be used to configure the employed sensor. All integrated memories are latch-based.
+Snitch configures the integrated HWPE through a register interface, and a dedicate AXI slave port can stream data from a sensor into the activation memory of the HWPE. The AXI Lite interface can also be used to configure the employed sensor. All integrated memories are latch-based.
 
 Thanks to its low power consumption and to the flexibility granted by the HWPE infrastructure, Wakelet target's applications span from always-on digital or image signal processing (DSP or ISP) to NN-based detection to wake up the rest of the SoC.
 
@@ -84,13 +84,13 @@ Finally, the testbench `test/tb_wl_top.sv` already uses a netlist wrapper `wl_to
 Wakelet's testbench contains 4 main components:
 - a virtual AXI Lite driver connected to Wakelet's AXI Lite master port
 - a virtual AXI Lite driver connected to Wakelet's AXI Lite slave port
-- a virtual, wide AXI driver connected to Wakelet's wide AXI port for the sensor
+- a virtual AXI driver connected to Wakelet's AXI slave port for the sensor
 - the DUT, i.e., Wakelet top-level
 
 The **testbench execution flow** is the following:
 1. The virtual AXI Lite master loads `$APP.instr_mem.bin` in the instruction memory
 2. The virtual AXI Lite master loads `$APP.data_mem.bin` in the data memory
-3. (in parallel to 1. and 2.) The virtual wide AXI master loads a parametrizable number of bytes with random content in the activation memory
+3. (in parallel to 1. and 2.) The virtual AXI master loads a parametrizable number of bytes with random content in the activation memory
 4. The testbench sends an interrupt to the Snitch core, which starts fetching from the instruction memory
 5. While Wakelet runs, the testbench polls the exposed EOC register to detect the end of the software run
 6. Finally, the testbench receives the return value and can launch another execution or terminate the simulation

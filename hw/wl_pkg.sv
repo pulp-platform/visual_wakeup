@@ -12,6 +12,7 @@ package wl_pkg;
   /////////////////////
   // Hardware config //
   /////////////////////
+  // Wakelet infrastructure
 
   // Top-level config
   localparam int unsigned AddrWidth = 32;
@@ -37,41 +38,16 @@ package wl_pkg;
   localparam int CsrNumRegs = 1;
   localparam int CsrNumBytes = CsrNumRegs * (DataWidth / 8);
 
-  // HWPE Config
-  localparam int HwpeDataWidthFact = 8;
-  localparam int HwpeDataWidth = DataWidth * HwpeDataWidthFact;
-  localparam int HwpeCfgNumBytes = 32'h0000_1000;
-  // check: hwpe-datamover-example/rtl/datamover_package.sv
-  // Activation memory is private to HWPE (not addressable by the core, so not in memory map)
-  localparam int ActMemNumBanks = `ifdef ACT_MEM_NUMBANKS `ACT_MEM_NUMBANKS `else 0 `endif;
-  localparam int ActMemNumBankWords = `ifdef ACT_MEM_NUMBANKWORDS `ACT_MEM_NUMBANKWORDS `else 0 `endif;
-  localparam int ActMemWordWidth = `ifdef ACT_MEM_WORDWIDTH `ACT_MEM_WORDWIDTH `else 0 `endif;
-
-  ///////////
-  // Types //
-  ///////////
-
-  // AXI widths
-  localparam int unsigned AxiAddrWidth = AddrWidth;
-  localparam int unsigned AxiDataWidth = DataWidth;
-  localparam int unsigned AxiWideDataWidth = DataWidth * HwpeDataWidthFact;
-  localparam int unsigned AxiSlvIdWidth = 2;
-  localparam int unsigned AxiUserWidth = 1;
-
-  // AXI types
-  typedef logic [AxiAddrWidth-1:0]      axi_addr_t;
-  typedef logic [AxiDataWidth-1:0]      axi_lite_data_t;
-  typedef logic [AxiWideDataWidth-1:0]   axi_wide_data_t;
-  typedef logic [AxiDataWidth/8-1:0]    axi_lite_strb_t;
-  typedef logic [AxiWideDataWidth/8-1:0] axi_wide_strb_t;
-  typedef logic [AxiSlvIdWidth-1:0]     axi_id_t;
-  typedef logic [AxiUserWidth-1:0]      axi_user_t;
+  // AXI Lite
+  localparam int unsigned AxiLiteAddrWidth = AddrWidth;
+  localparam int unsigned AxiLiteDataWidth = DataWidth;
+  // Types
+  typedef logic [AxiLiteAddrWidth-1:0]   axi_lite_addr_t;
+  typedef logic [AxiLiteDataWidth-1:0]   axi_lite_data_t;
+  typedef logic [AxiLiteDataWidth/8-1:0] axi_lite_strb_t;
   // AXI Lite bus types
   // defines: axi_lite_req_t, axi_lite_resp_t
-  `AXI_LITE_TYPEDEF_ALL(axi_lite, axi_addr_t, axi_lite_data_t, axi_lite_strb_t)
-  // AXI bus types
-  // defines: axi_req_t, axi_resp_t
-  `AXI_TYPEDEF_ALL(axi, axi_addr_t, axi_id_t, axi_wide_data_t, axi_wide_strb_t, axi_user_t)
+  `AXI_LITE_TYPEDEF_ALL(axi_lite, axi_lite_addr_t, axi_lite_data_t, axi_lite_strb_t)
 
   // Instruction memory
   typedef logic [InstrMemAddrWidth-1:0] instr_mem_addr_t;
@@ -86,9 +62,39 @@ package wl_pkg;
   // Address demux rule type
   typedef struct packed {
     int unsigned idx;
-    logic [AddrWidth-1:0] base;
-    logic [AddrWidth-1:0] mask;
+    logic [AxiLiteAddrWidth-1:0] base;
+    logic [AxiLiteAddrWidth-1:0] mask;
   } addr_napot_demux_rule_t;
+
+  /////////////////////
+  // Hardware config //
+  /////////////////////
+  // HWPE Subsystem
+
+  // HWPE Config
+  localparam int HwpeDataWidthFact = 8;
+  localparam int HwpeDataWidth = DataWidth * HwpeDataWidthFact;
+  localparam int HwpeCfgNumBytes = 32'h0000_1000;
+  // check: hwpe-datamover-example/rtl/datamover_package.sv
+  // Activation memory is private to HWPE (not addressable by the core, so not in memory map)
+  localparam int ActMemNumBanks = `ifdef ACT_MEM_NUMBANKS `ACT_MEM_NUMBANKS `else 0 `endif;
+  localparam int ActMemNumBankWords = `ifdef ACT_MEM_NUMBANKWORDS `ACT_MEM_NUMBANKWORDS `else 0 `endif;
+  localparam int ActMemWordWidth = `ifdef ACT_MEM_WORDWIDTH `ACT_MEM_WORDWIDTH `else 0 `endif;
+
+  // AXI
+  localparam int unsigned AxiAddrWidth = AddrWidth;
+  localparam int unsigned AxiDataWidth = DataWidth * HwpeDataWidthFact;
+  localparam int unsigned AxiSlvIdWidth = 2;
+  localparam int unsigned AxiUserWidth = 1;
+  // Types
+  typedef logic [AxiAddrWidth-1:0]   axi_addr_t;
+  typedef logic [AxiDataWidth-1:0]   axi_data_t;
+  typedef logic [AxiDataWidth/8-1:0] axi_strb_t;
+  typedef logic [AxiSlvIdWidth-1:0]  axi_id_t;
+  typedef logic [AxiUserWidth-1:0]   axi_user_t;
+  // AXI bus types
+  // defines: axi_req_t, axi_resp_t
+  `AXI_TYPEDEF_ALL(axi, axi_addr_t, axi_id_t, axi_data_t, axi_strb_t, axi_user_t)
 
   ////////////////
   // Memory map //
@@ -96,19 +102,19 @@ package wl_pkg;
 
   //NOTE: Must be NAPOT!
 
-  localparam axi_addr_t BootromBaseAddr = BaseAddress + 32'h0000_0000; // addressable from: core IF (r)
-  localparam axi_addr_t BootromOffset = BootromNumBytes;
+  localparam axi_lite_addr_t BootromBaseAddr = BaseAddress + 32'h0000_0000; // addressable from: core IF (r)
+  localparam axi_lite_addr_t BootromOffset = BootromNumBytes;
 
-  localparam axi_addr_t InstrMemBaseAddr = BaseAddress + 32'h0001_0000; // addressable from: core IF (r), cluster bus (rw)
-  localparam axi_addr_t InstrMemOffset = InstrMemNumBytes;
+  localparam axi_lite_addr_t InstrMemBaseAddr = BaseAddress + 32'h0001_0000; // addressable from: core IF (r), cluster bus (rw)
+  localparam axi_lite_addr_t InstrMemOffset = InstrMemNumBytes;
 
-  localparam axi_addr_t DataMemBaseAddr = BaseAddress + 32'h0002_0000; // addressable from: core LSU, cluster bus (rw)
-  localparam axi_addr_t DataMemOffset = DataMemNumBytes;
+  localparam axi_lite_addr_t DataMemBaseAddr = BaseAddress + 32'h0002_0000; // addressable from: core LSU, cluster bus (rw)
+  localparam axi_lite_addr_t DataMemOffset = DataMemNumBytes;
 
-  localparam axi_addr_t CsrBaseAddr = BaseAddress + 32'h0004_0000; // addressable from: core LSU (rw)
-  localparam axi_addr_t CsrOffset = CsrNumBytes;
+  localparam axi_lite_addr_t CsrBaseAddr = BaseAddress + 32'h0004_0000; // addressable from: core LSU (rw)
+  localparam axi_lite_addr_t CsrOffset = CsrNumBytes;
 
-  localparam axi_addr_t HwpeCfgBaseAddr = BaseAddress + 32'h0008_0000; // addressable from: core LSU (rw)
-  localparam axi_addr_t HwpeCfgOffset = HwpeCfgNumBytes;
+  localparam axi_lite_addr_t HwpeCfgBaseAddr = BaseAddress + 32'h0008_0000; // addressable from: core LSU (rw)
+  localparam axi_lite_addr_t HwpeCfgOffset = HwpeCfgNumBytes;
 
 endpackage

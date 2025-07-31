@@ -29,12 +29,12 @@ module tb_wl_top
   //  __v__                             |     |__________| (slaves)
   // |     |--- AXI Lite master --------'        |    |                        _______________
   // | DUT |<-- AXI Lite slave ------------------'    '------[ Adapter ]----> | Tb Sim memory |
-  // |_____|<-- AXI wide slave ----.                                          |_______________|
+  // |_____|<-- AXI slave ---------.                                          |_______________|
   //    |                          |
   //    |                          |
-  //    v                 axi_wide_tb2dut_req
-  //  s_eoc               axi_wide_tb2dut_rsp
-  //                       (axi_wide_driver)
+  //    v                    axi_tb2dut_req
+  //  s_eoc                  axi_tb2dut_rsp
+  //                         (axi_tb_driver)
   //                        
 
   ////////////////////////////
@@ -58,20 +58,20 @@ module tb_wl_top
 
   // AXI Lite testbench master driver
   AXI_LITE #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) axi_lite_drv2xbar ();
 
   AXI_LITE_DV #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) axi_lite_drv2xbar_dv (s_clk);
 
   `AXI_LITE_ASSIGN(axi_lite_drv2xbar, axi_lite_drv2xbar_dv)
 
   axi_test::axi_lite_driver #(
-    .AW( AxiAddrWidth ),
-    .DW( AxiDataWidth ),
+    .AW( AxiLiteAddrWidth ),
+    .DW( AxiLiteDataWidth ),
     .TA ( TbTA ),
     .TT ( TbTT )
   ) axi_lite_tb_driver = new(axi_lite_drv2xbar_dv);
@@ -82,17 +82,17 @@ module tb_wl_top
   task axi_lite_send_aw_w (
     // AXI driver
     input axi_test::axi_lite_driver #(
-      .AW ( AxiAddrWidth ),
-      .DW ( AxiDataWidth ),
+      .AW ( AxiLiteAddrWidth ),
+      .DW ( AxiLiteDataWidth ),
       .TA ( TbTA ),
       .TT ( TbTT )
     ) axi_drv,
     // AW
-    input logic [AxiAddrWidth-1:0] addr,
-    input axi_pkg::prot_t          prot,
+    input logic [AxiLiteAddrWidth-1:0] addr,
+    input axi_pkg::prot_t              prot,
     // W
-    input logic [AxiDataWidth-1:0]   data,
-    input logic [AxiDataWidth/8-1:0] strb
+    input logic [AxiLiteDataWidth-1:0]   data,
+    input logic [AxiLiteDataWidth/8-1:0] strb
   );
     axi_drv.axi.aw_addr  <= #axi_drv.TA addr;
     axi_drv.axi.aw_prot  <= #axi_drv.TA prot;
@@ -117,8 +117,8 @@ module tb_wl_top
 
   // AXI Lite master port of DUT
   AXI_LITE #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) axi_lite_dut2tb ();
 
   axi_lite_req_t axi_lite_dut2tb_req;
@@ -129,8 +129,8 @@ module tb_wl_top
 
   // AXI Lite slave port of DUT
   AXI_LITE #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) axi_lite_tb2dut ();
 
   axi_lite_req_t axi_lite_tb2dut_req;
@@ -144,19 +144,19 @@ module tb_wl_top
   ////////////////////
 
   AXI_LITE #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) axi_lite_xbar2mem ();
 
   AXI_BUS #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth ),
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth ),
     .AXI_ID_WIDTH ( 32'd1 ),
     .AXI_USER_WIDTH ( 32'd1 )
   ) axi_xbar2mem ();
 
   axi_lite_to_axi_intf #(
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) i_sim_mem_axilite_to_axi (
     .in ( axi_lite_xbar2mem ),
     .slv_aw_cache_i ( '0 ),
@@ -171,8 +171,8 @@ module tb_wl_top
   //      would complicate debugging.
 
   axi_sim_mem_intf #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth ),
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth ),
     .AXI_ID_WIDTH ( 32'd1 ),
     .AXI_USER_WIDTH ( 32'd1 ),
     .APPL_DELAY ( TbTA ),
@@ -244,16 +244,16 @@ module tb_wl_top
     // combinational loop with the insides of the DUT
     LatencyMode:    axi_pkg::CUT_SLV_PORTS,
     PipelineStages: 32'd0,
-    AxiAddrWidth:   AxiAddrWidth,
-    AxiDataWidth:   AxiDataWidth,
+    AxiAddrWidth:   AxiLiteAddrWidth,
+    AxiDataWidth:   AxiLiteDataWidth,
     NoAddrRules:    TbXbarNumRules,
     default:        '0
   };
 
   // Xbar masters
   AXI_LITE #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) tb_xbar_in [TbXbarNumMasters-1:0] ();
   // 0. from AXI Lite master driver of testbench
   `AXI_LITE_ASSIGN(tb_xbar_in[0], axi_lite_drv2xbar)
@@ -262,8 +262,8 @@ module tb_wl_top
 
   // Xbar slaves
   AXI_LITE #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) tb_xbar_out [TbXbarNumSlaves-1:0] ();
   // 0. to testbench memory
   `AXI_LITE_ASSIGN(axi_lite_xbar2mem, tb_xbar_out[0])
@@ -285,45 +285,45 @@ module tb_wl_top
     .default_mst_port_i ( '0 )
   );
 
-  /////////////////////////////////
-  // Wide AXI Tb driver (sensor) //
-  /////////////////////////////////
+  ////////////////////////////
+  // AXI Tb driver (sensor) //
+  ////////////////////////////
 
   // AXI master bus for sensor
   AXI_BUS #(
     .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiWideDataWidth ),
+    .AXI_DATA_WIDTH ( AxiDataWidth ),
     .AXI_ID_WIDTH   ( AxiSlvIdWidth ),
     .AXI_USER_WIDTH ( AxiUserWidth )
-  ) axi_wide_tb2dut ();
+  ) axi_tb2dut ();
 
-  axi_req_t axi_wide_tb2dut_req;
-  axi_resp_t axi_wide_tb2dut_rsp;
+  axi_req_t axi_tb2dut_req;
+  axi_resp_t axi_tb2dut_rsp;
 
-  `AXI_ASSIGN_TO_REQ(axi_wide_tb2dut_req, axi_wide_tb2dut)
-  `AXI_ASSIGN_FROM_RESP(axi_wide_tb2dut, axi_wide_tb2dut_rsp)
+  `AXI_ASSIGN_TO_REQ(axi_tb2dut_req, axi_tb2dut)
+  `AXI_ASSIGN_FROM_RESP(axi_tb2dut, axi_tb2dut_rsp)
 
   // AXI driver for sensor
   AXI_BUS_DV #(
     .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiWideDataWidth ),
+    .AXI_DATA_WIDTH ( AxiDataWidth ),
     .AXI_ID_WIDTH   ( AxiSlvIdWidth ),
     .AXI_USER_WIDTH ( AxiUserWidth )
-  ) axi_wide_tb2dut_dv (s_clk);
+  ) axi_tb2dut_dv (s_clk);
 
-  `AXI_ASSIGN(axi_wide_tb2dut, axi_wide_tb2dut_dv)
+  `AXI_ASSIGN(axi_tb2dut, axi_tb2dut_dv)
 
   axi_test::axi_driver #(
     .AW ( AxiAddrWidth ),
-    .DW ( AxiWideDataWidth ),
+    .DW ( AxiDataWidth ),
     .IW ( AxiSlvIdWidth ),
     .UW ( AxiUserWidth ),
     .TA ( TbTA ),
     .TT ( TbTT )
-  ) axi_wide_driver = new(axi_wide_tb2dut_dv);
+  ) axi_tb_driver = new(axi_tb2dut_dv);
 
   typedef axi_test::axi_ax_beat #(.AW(AxiAddrWidth), .IW(AxiSlvIdWidth), .UW(AxiUserWidth)) aw_beat_t;
-  typedef axi_test::axi_w_beat #(.DW(AxiWideDataWidth), .UW(AxiUserWidth)) w_beat_t;
+  typedef axi_test::axi_w_beat #(.DW(AxiDataWidth), .UW(AxiUserWidth)) w_beat_t;
   typedef axi_test::axi_b_beat #(.IW(AxiSlvIdWidth), .UW(AxiUserWidth)) b_beat_t;
 
   /////////
@@ -343,8 +343,8 @@ module tb_wl_top
       .axi_lite_mst_rsp_i ( axi_lite_dut2tb_rsp ),
       .irq_i ( s_irq ),
       .eoc_o ( s_eoc ),
-      .axi_wide_slv_req_i ( axi_wide_tb2dut_req ),
-      .axi_wide_slv_rsp_o ( axi_wide_tb2dut_rsp )
+      .axi_slv_req_i ( axi_tb2dut_req ),
+      .axi_slv_rsp_o ( axi_tb2dut_rsp )
     );
 
   //////////
@@ -355,8 +355,8 @@ module tb_wl_top
     int file, ret;
     int w_num;
     string app_base, instr_mem_bin, data_mem_bin;
-    logic [DataWidth-1:0] data;
     logic [AddrWidth-1:0] address;
+    logic [DataWidth-1:0] data;
     automatic axi_pkg::resp_t resp;
     automatic logic rand_success;
 
@@ -367,7 +367,7 @@ module tb_wl_top
     // Reset remaining tb-driven signals
     s_irq = 1'b0;
     // Reset sensor AXI interface
-    axi_wide_driver.reset_master();
+    axi_tb_driver.reset_master();
 
     // Wait for reset to be released
     @(posedge s_rst_n);
@@ -456,33 +456,33 @@ module tb_wl_top
 
         $display("[TB] Flashing activation memory with random data.");
 
-        // Exploit dedicated sensor wide interface
+        // Exploit AXI interface dedicated to sensor
 
         aw_beat.ax_id    = '0;
         aw_beat.ax_addr  = '0; // start from address 0 of activation memory
-        aw_beat.ax_len   = ActMemNumBytesInit/(AxiWideDataWidth/8) - 1; // number of beats required - 1
-        aw_beat.ax_size  = $clog2(AxiWideDataWidth/8); // port width
+        aw_beat.ax_len   = ActMemNumBytesInit/(AxiDataWidth/8) - 1; // number of beats required - 1
+        aw_beat.ax_size  = $clog2(AxiDataWidth/8); // port width
         aw_beat.ax_burst = 2'b01; // INCR burst
-        axi_wide_driver.send_aw(aw_beat);
+        axi_tb_driver.send_aw(aw_beat);
 
-        for (int i = 0; i < ActMemNumBytesInit/(AxiWideDataWidth/8); i++) begin
+        for (int i = 0; i < ActMemNumBytesInit/(AxiDataWidth/8); i++) begin
           // Generate random data for activation memory
           rand_success = std::randomize(w_beat.w_data); assert(rand_success);
           w_beat.w_strb = '1; // write all bytes
-          if (i == ActMemNumBytesInit/(AxiWideDataWidth/8) - 1) begin
+          if (i == ActMemNumBytesInit/(AxiDataWidth/8) - 1) begin
             w_beat.w_last = 1'b1; // last beat
           end else begin
             w_beat.w_last = 1'b0;
           end
           w_beat.w_user = '0;
-          axi_wide_driver.send_w(w_beat);
+          axi_tb_driver.send_w(w_beat);
         end
         // Wait for the last beat to be acknowledged
-        axi_wide_driver.recv_b(b_beat);
+        axi_tb_driver.recv_b(b_beat);
 
         $info("[TB] Activation memory flash complete. %0d bytes loaded in SPM.", ActMemNumBytesInit);
 
-        axi_wide_driver.reset_master();
+        axi_tb_driver.reset_master();
         @(posedge s_clk);
       end
     join

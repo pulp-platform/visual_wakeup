@@ -22,10 +22,10 @@ module wl_top
   // Wake-up request to core
   input logic     irq_i,
   // End of computation and return value
-  output logic [DataWidth-1:0] eoc_o,
-  // AXI wide interface (slave port), for sensors
-  input  axi_req_t  axi_wide_slv_req_i,
-  output axi_resp_t axi_wide_slv_rsp_o
+  output logic [AxiLiteDataWidth-1:0] eoc_o,
+  // AXI interface (slave port), for sensors
+  input  axi_req_t  axi_slv_req_i,
+  output axi_resp_t axi_slv_rsp_o
 );
 
   ////////////////////////
@@ -33,13 +33,13 @@ module wl_top
   ////////////////////////
 
   AXI_LITE #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) axi_lite_in ();
 
   AXI_LITE #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) axi_lite_out ();
 
   `AXI_LITE_ASSIGN_FROM_REQ(axi_lite_in, axi_lite_slv_req_i)
@@ -97,8 +97,8 @@ module wl_top
     FallThrough:    1'b0,
     LatencyMode:    axi_pkg::NO_LATENCY,
     PipelineStages: 32'd0,
-    AxiAddrWidth:   AxiAddrWidth,
-    AxiDataWidth:   AxiDataWidth,
+    AxiAddrWidth:   AxiLiteAddrWidth,
+    AxiDataWidth:   AxiLiteDataWidth,
     NoAddrRules:    ClusterBusNumRules,
     default:        '0
   };
@@ -106,8 +106,8 @@ module wl_top
   /* Xbar masters */
 
   AXI_LITE #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) cluster_bus_axi_lite_in [ClusterBusNumMasters-1:0] ();
   // from external AXI narrow slave port
   `AXI_LITE_ASSIGN(cluster_bus_axi_lite_in[0], axi_lite_in)
@@ -116,8 +116,8 @@ module wl_top
   /* Xbar slaves */
 
   AXI_LITE #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) cluster_bus_axi_lite_out [ClusterBusNumSlaves-1:0] ();
   // to external AXI narrow master port
   `AXI_LITE_ASSIGN(axi_lite_out, cluster_bus_axi_lite_out[0])
@@ -141,6 +141,21 @@ module wl_top
     .default_mst_port_i ( '0 )
   );
 
+  /* Assertions */
+
+  `ifdef TARGET_SIMULATION
+    initial begin
+      check_datawidth: assert (AxiLiteDataWidth == DataWidth)
+      else begin
+        $error("[ASSERT FAILED] [%m] AxiLiteDataWidth and DataWidth must be the same", `__FILE__, `__LINE__);
+      end
+      check_addrwidth: assert (AxiLiteAddrWidth == AddrWidth)
+      else begin
+        $error("[ASSERT FAILED] [%m] AxiLiteAddrWidth and AddrWidth must be the same", `__FILE__, `__LINE__);
+      end
+    end
+  `endif
+
   //////////////////////////
   // Cluster bus adapters //
   //////////////////////////
@@ -149,19 +164,19 @@ module wl_top
 
   // Adapt AXI Lite -> AXI
   AXI_LITE #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) bus_data_mem_axi_lite_in ();
 
   AXI_BUS #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth ),
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth ),
     .AXI_ID_WIDTH ( 32'd1 ),
     .AXI_USER_WIDTH ( 32'd1 )
   ) bus_data_mem_axi_in ();
 
   axi_lite_to_axi_intf #(
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) i_bus_data_mem_axi_lite_to_axi (
     .in ( bus_data_mem_axi_lite_in ),
     .slv_aw_cache_i ( '0 ),
@@ -171,13 +186,13 @@ module wl_top
 
   // Adapt AXI -> reqrsp bus
   REQRSP_BUS #(
-    .ADDR_WIDTH ( AxiAddrWidth ),
-    .DATA_WIDTH ( AxiDataWidth )
+    .ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .DATA_WIDTH ( AxiLiteDataWidth )
   ) bus_data_mem_reqrsp_in ();
 
   axi_to_reqrsp_intf #(
-    .AddrWidth ( AxiAddrWidth ),
-    .DataWidth ( AxiDataWidth ),
+    .AddrWidth ( AxiLiteAddrWidth ),
+    .DataWidth ( AxiLiteDataWidth ),
     .IdWidth ( 32'd1 ),
     .UserWidth ( 32'd1 ),
     .BufDepth ( 32'd1 )
@@ -208,19 +223,19 @@ module wl_top
 
   // Adapt AXI Lite -> AXI
   AXI_LITE #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) bus_instr_mem_axi_lite_in ();
 
   AXI_BUS #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth ),
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth ),
     .AXI_ID_WIDTH ( 32'd1 ),
     .AXI_USER_WIDTH ( 32'd1 )
   ) bus_instr_mem_axi_in ();
 
   axi_lite_to_axi_intf #(
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) i_bus_instr_mem_axi_lite_to_axi (
     .in ( bus_instr_mem_axi_lite_in ),
     .slv_aw_cache_i ( '0 ),
@@ -231,15 +246,15 @@ module wl_top
   // Adapt AXI -> memory interface
   logic           bus_instr_mem_req;
   logic           bus_instr_mem_rw_gnt;
-  axi_addr_t      bus_instr_mem_addr;
+  axi_lite_addr_t bus_instr_mem_addr;
   axi_lite_data_t bus_instr_mem_w_data;
   logic           bus_instr_mem_we;
   logic           bus_instr_mem_ack;
   axi_lite_data_t bus_instr_mem_r_data;
 
   axi_to_mem_intf #(
-    .ADDR_WIDTH ( AxiAddrWidth ),
-    .DATA_WIDTH ( AxiDataWidth ),
+    .ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .DATA_WIDTH ( AxiLiteDataWidth ),
     .ID_WIDTH ( 32'd1 ),
     .USER_WIDTH ( 32'd1 ),
     .NUM_BANKS ( 32'd1 ),
@@ -272,7 +287,7 @@ module wl_top
   assign bus_instr_mem_ack = bus_instr_mem_w_ack || bus_instr_mem_r_valid;
 
   // Remap address
-  axi_addr_t bus_instr_mem_addr_remap;
+  axi_lite_addr_t bus_instr_mem_addr_remap;
   assign bus_instr_mem_addr_remap = bus_instr_mem_addr & (InstrMemOffset - 1);
 
   /////////////////
@@ -280,7 +295,7 @@ module wl_top
   /////////////////
 
   // Instruction interface
-  logic [AddrWidth-1:0] core_instr_addr;
+  logic [AxiLiteAddrWidth-1:0] core_instr_addr;
   logic [31:0] core_instr_data;
   logic core_instr_valid;
   logic core_instr_ready;
@@ -289,8 +304,8 @@ module wl_top
   core_data_rsp_t core_data_rsp;
 
   core_subsystem #(
-    .AddrWidth ( AddrWidth ),
-    .DataWidth ( DataWidth ),
+    .AddrWidth ( AxiLiteAddrWidth ),
+    .DataWidth ( AxiLiteDataWidth ),
     .BootAddr ( BootromBaseAddr ),
     .dreq_t ( core_data_req_t ),
     .drsp_t ( core_data_rsp_t )
@@ -363,8 +378,8 @@ module wl_top
 
   // Core data demux reqrsp bus to external port
   REQRSP_BUS #(
-    .ADDR_WIDTH ( AxiAddrWidth ),
-    .DATA_WIDTH ( AxiDataWidth )
+    .ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .DATA_WIDTH ( AxiLiteDataWidth )
   ) core_data_demux_ext ();
 
   `REQRSP_ASSIGN_FROM_REQ(core_data_demux_ext, core_data_demux_ext_req)
@@ -372,15 +387,15 @@ module wl_top
 
   // Adapt REQRSP -> AXI
   AXI_BUS #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth ),
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth ),
     .AXI_ID_WIDTH ( 32'd1 ),
     .AXI_USER_WIDTH ( 32'd1 )
   ) bus_core_data_demux_ext_axi_out ();
 
   reqrsp_to_axi_intf #(
-    .AddrWidth ( AxiAddrWidth ),
-    .DataWidth ( AxiDataWidth ),
+    .AddrWidth ( AxiLiteAddrWidth ),
+    .DataWidth ( AxiLiteDataWidth ),
     .AxiIdWidth ( 32'd1 ),
     .AxiUserWidth ( 32'd1 ),
     .ID ( 0 )
@@ -394,13 +409,13 @@ module wl_top
 
   // Adapt AXI -> AXI Lite
   AXI_LITE #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth )
   ) bus_core_data_demux_ext_axi_lite_out ();
 
   axi_to_axi_lite_intf #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth ),
+    .AXI_ADDR_WIDTH ( AxiLiteAddrWidth ),
+    .AXI_DATA_WIDTH ( AxiLiteDataWidth ),
     .AXI_ID_WIDTH ( 32'd1 ),
     .AXI_USER_WIDTH ( 32'd1 ),
     .AXI_MAX_WRITE_TXNS ( 32'd1 ),
@@ -428,8 +443,8 @@ module wl_top
   
   reqrsp_mux #(
     .NrPorts ( 2 ),
-    .AddrWidth ( AddrWidth ),
-    .DataWidth ( DataWidth ),
+    .AddrWidth ( AxiLiteAddrWidth ),
+    .DataWidth ( AxiLiteDataWidth ),
     .req_t ( core_data_req_t ),
     .rsp_t ( core_data_rsp_t ),
     .RespDepth ( 1 ),
@@ -448,7 +463,7 @@ module wl_top
 
   core_data_mem #(
     .AddrWidth ( DataMemAddrWidth ),
-    .DataWidth ( DataWidth ),
+    .DataWidth ( AxiLiteDataWidth ),
     .req_t ( core_data_req_t ),
     .rsp_t ( core_data_rsp_t )
   ) i_data_mem (
@@ -484,10 +499,10 @@ module wl_top
   // 1. Private instruction memory
 
   localparam int CoreInstrDemuxNumPorts = 2;
-  logic [AddrWidth-1:0] core_instr_demux_instr_mem_addr,  core_instr_demux_bootrom_addr;
-  logic                 core_instr_demux_instr_mem_valid, core_instr_demux_bootrom_valid;
-  logic          [31:0] core_instr_demux_instr_mem_data,  core_instr_demux_bootrom_data;
-  logic                 core_instr_demux_instr_mem_ready, core_instr_demux_bootrom_ready;
+  logic [AxiLiteAddrWidth-1:0] core_instr_demux_instr_mem_addr,  core_instr_demux_bootrom_addr;
+  logic                        core_instr_demux_instr_mem_valid, core_instr_demux_bootrom_valid;
+  logic                 [31:0] core_instr_demux_instr_mem_data,  core_instr_demux_bootrom_data;
+  logic                        core_instr_demux_instr_mem_ready, core_instr_demux_bootrom_ready;
 
   localparam addr_napot_demux_rule_t [CoreInstrDemuxNumPorts-1:0] CoreInstrDemuxAddrMap = '{
     '{ // to Instruction memory
@@ -504,7 +519,7 @@ module wl_top
 
   core_instr_demux #(
     .NumPorts ( CoreInstrDemuxNumPorts ),
-    .AddrWidth ( AddrWidth ),
+    .AddrWidth ( AxiLiteAddrWidth ),
     .rule_t ( addr_napot_demux_rule_t )
   ) i_core_instr_demux (
     .clk_i ( clk_i ),
@@ -595,7 +610,7 @@ module wl_top
 
   core_instr_mem #(
     .AddrWidth ( InstrMemAddrWidth ),
-    .DataWidth ( AxiDataWidth )
+    .DataWidth ( AxiLiteDataWidth )
   ) i_instr_mem (
     .clk_i ( clk_i ),
     .rst_ni ( rst_ni ),
@@ -658,18 +673,18 @@ module wl_top
     .ActMemNumBanks ( ActMemNumBanks ),
     .ActMemNumBankWords ( ActMemNumBankWords ),
     .ActMemWordWidth ( ActMemWordWidth ),
-    .axi_aw_wide_chan_t ( axi_aw_chan_t ),
-    .axi_w_wide_chan_t ( axi_w_chan_t ),
-    .axi_b_wide_chan_t ( axi_b_chan_t ),
-    .axi_ar_wide_chan_t ( axi_ar_chan_t ),
-    .axi_r_wide_chan_t ( axi_r_chan_t ),
-    .axi_wide_req_t ( axi_req_t ),
-    .axi_wide_resp_t ( axi_resp_t )
+    .axi_aw_chan_t ( axi_aw_chan_t ),
+    .axi_w_chan_t ( axi_w_chan_t ),
+    .axi_b_chan_t ( axi_b_chan_t ),
+    .axi_ar_chan_t ( axi_ar_chan_t ),
+    .axi_r_chan_t ( axi_r_chan_t ),
+    .axi_req_t ( axi_req_t ),
+    .axi_resp_t ( axi_resp_t )
   ) i_hwpe_subsystem (
     .clk_i ( clk_i ),
     .rst_ni ( rst_ni ),
-    .axi_wide_slv_req_i ( axi_wide_slv_req_i ),
-    .axi_wide_slv_rsp_o ( axi_wide_slv_rsp_o ),
+    .axi_slv_req_i ( axi_slv_req_i ),
+    .axi_slv_rsp_o ( axi_slv_rsp_o ),
     .periph_slave ( periph_hwpe_if )
   );
 
