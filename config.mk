@@ -4,10 +4,6 @@
 #
 # Sergio Mazzola <smazzola@iis.ee.ethz.ch>
 
-############
-# Memories #
-############
-
 # Possible values:
 # - scm: standard-cell-based memory
 # - sram: SRAM cut
@@ -19,9 +15,23 @@ ACT_MEM_TYPE ?= scm
 DATA_MEM_NUMWORDS ?= 128
 INSTR_MEM_NUMWORDS ?= 128
 
+# Activation memory:
+# The memory is structured as ACT_MEM_NUMBANKS banks with ACT_MEM_NUMBANKWORDS
+# each. The bank words have a width of ACT_MEM_NUMELEMWORD * ACT_MEM_ELEMWIDTH
+# bits.
+
 ACT_MEM_NUMBANKS ?= 16
 ACT_MEM_NUMBANKWORDS ?= 128
-ACT_MEM_WORDWIDTH ?= 32 # in bits
+ACT_MEM_NUMELEMWORD ?= 1 # power of 2
+ACT_MEM_ELEMWIDTH ?= 32 # in bits
+
+# HWPE Subsystem:
+# HWPE_ELEMWIDTH_FACT determines the width (in bits) of the HWPE memory accesses
+# (to the activation memory), and also of the AXI interface dedicated to sensors.
+# Such width is equal to HWPE_ELEMWIDTH_FACT * ACT_MEM_ELEMWIDTH.
+
+HWPE_ELEMWIDTH_FACT ?= 8
+
 
 #########################
 # Parameters generation #
@@ -58,4 +68,5 @@ else
 endif
 HW_CFG_DEFS += -D ACT_MEM_NUMBANKS=$(ACT_MEM_NUMBANKS)
 HW_CFG_DEFS += -D ACT_MEM_NUMBANKWORDS=$(ACT_MEM_NUMBANKWORDS)
-HW_CFG_DEFS += -D ACT_MEM_WORDWIDTH=$(ACT_MEM_WORDWIDTH)
+HW_CFG_DEFS += -D ACT_MEM_NUMELEMWORD=$(ACT_MEM_NUMELEMWORD)
+HW_CFG_DEFS += -D ACT_MEM_ELEMWIDTH=$(ACT_MEM_ELEMWIDTH)

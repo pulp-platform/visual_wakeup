@@ -10,6 +10,8 @@ if {$GUI == 1} {
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::AddrWidth
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::DataWidth
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::BaseAddress
+    add wave -noupdate -group {params (wl_pkg)} /wl_pkg::AxiLiteAddrWidth
+    add wave -noupdate -group {params (wl_pkg)} /wl_pkg::AxiLiteDataWidth
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::BootromNumWords
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::BootromNumBytes
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::BootromAddrWidth
@@ -21,14 +23,14 @@ if {$GUI == 1} {
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::DataMemAddrWidth
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::CsrNumRegs
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::CsrNumBytes
-    add wave -noupdate -group {params (wl_pkg)} /wl_pkg::HwpeDataWidthFact
-    add wave -noupdate -group {params (wl_pkg)} /wl_pkg::HwpeDataWidth
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::HwpeCfgNumBytes
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::ActMemNumBanks
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::ActMemNumBankWords
+    add wave -noupdate -group {params (wl_pkg)} /wl_pkg::ActMemNumElemWord
+    add wave -noupdate -group {params (wl_pkg)} /wl_pkg::ActMemElemWidth
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::ActMemWordWidth
-    add wave -noupdate -group {params (wl_pkg)} /wl_pkg::AxiLiteAddrWidth
-    add wave -noupdate -group {params (wl_pkg)} /wl_pkg::AxiLiteDataWidth
+    add wave -noupdate -group {params (wl_pkg)} /wl_pkg::HwpeDataWidthFact
+    add wave -noupdate -group {params (wl_pkg)} /wl_pkg::HwpeDataWidth
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::AxiAddrWidth
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::AxiDataWidth
     add wave -noupdate -group {params (wl_pkg)} /wl_pkg::AxiSlvIdWidth

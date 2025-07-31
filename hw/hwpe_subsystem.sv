@@ -14,7 +14,8 @@ module hwpe_subsystem #(
   // Activation memory
   parameter int unsigned ActMemNumBanks = 16,
   parameter int unsigned ActMemNumBankWords = 128,
-  parameter int unsigned ActMemWordWidth = DataWidth,
+  parameter int unsigned ActMemNumElemWord = 1,
+  parameter int unsigned ActMemElemWidth = 32,
   // AXI channels
   parameter type axi_aw_chan_t = logic,
   parameter type  axi_w_chan_t = logic,
@@ -26,6 +27,7 @@ module hwpe_subsystem #(
   parameter type axi_resp_t = logic,
   // Dependent parameters: do not modify!
   localparam int unsigned HwpeDataWidth = DataWidth * WidePortFact,
+  localparam int unsigned ActMemWordWidth = ActMemElemWidth * ActMemNumElemWord,
   parameter int unsigned ActMemAddrWidth = $clog2(ActMemNumBankWords) + 2 // bank 4-byte words + 2 LSBs for bytes
 )(
   input  logic clk_i,

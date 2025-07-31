@@ -38,6 +38,10 @@ package wl_pkg;
   localparam int CsrNumRegs = 1;
   localparam int CsrNumBytes = CsrNumRegs * (DataWidth / 8);
 
+  // HWPE peripheral config
+  localparam int HwpeCfgNumBytes = 32'h0000_1000;
+  // check: hwpe-datamover-example/rtl/datamover_package.sv
+
   // AXI Lite
   localparam int unsigned AxiLiteAddrWidth = AddrWidth;
   localparam int unsigned AxiLiteDataWidth = DataWidth;
@@ -71,19 +75,20 @@ package wl_pkg;
   /////////////////////
   // HWPE Subsystem
 
-  // HWPE Config
-  localparam int HwpeDataWidthFact = 8;
-  localparam int HwpeDataWidth = DataWidth * HwpeDataWidthFact;
-  localparam int HwpeCfgNumBytes = 32'h0000_1000;
-  // check: hwpe-datamover-example/rtl/datamover_package.sv
-  // Activation memory is private to HWPE (not addressable by the core, so not in memory map)
+  // Activation memory
+  // This memory is private to HWPE (not addressable by the core or cluster xbar, so not in memory map)
   localparam int ActMemNumBanks = `ifdef ACT_MEM_NUMBANKS `ACT_MEM_NUMBANKS `else 0 `endif;
   localparam int ActMemNumBankWords = `ifdef ACT_MEM_NUMBANKWORDS `ACT_MEM_NUMBANKWORDS `else 0 `endif;
-  localparam int ActMemWordWidth = `ifdef ACT_MEM_WORDWIDTH `ACT_MEM_WORDWIDTH `else 0 `endif;
+  localparam int ActMemNumElemWord = `ifdef ACT_MEM_NUMELEMWORD `ACT_MEM_NUMELEMWORD `else 0 `endif;
+  localparam int ActMemElemWidth = `ifdef ACT_MEM_ELEMWIDTH `ACT_MEM_ELEMWIDTH `else 0 `endif;
+  localparam int ActMemWordWidth = ActMemElemWidth * ActMemNumElemWord;
+  // HWPE
+  localparam int HwpeDataWidthFact = 8;
+  localparam int HwpeDataWidth = ActMemElemWidth * HwpeDataWidthFact;
 
   // AXI
   localparam int unsigned AxiAddrWidth = AddrWidth;
-  localparam int unsigned AxiDataWidth = DataWidth * HwpeDataWidthFact;
+  localparam int unsigned AxiDataWidth = HwpeDataWidth;
   localparam int unsigned AxiSlvIdWidth = 2;
   localparam int unsigned AxiUserWidth = 1;
   // Types
