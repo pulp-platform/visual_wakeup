@@ -22,16 +22,19 @@ INSTR_MEM_NUMWORDS ?= 128
 
 ACT_MEM_NUMBANKS ?= 16
 ACT_MEM_NUMBANKWORDS ?= 128
-ACT_MEM_NUMELEMWORD ?= 1 # power of 2
-ACT_MEM_ELEMWIDTH ?= 32 # in bits
+ACT_MEM_NUMELEMWORD ?= 4 # power of 2
+ACT_MEM_ELEMWIDTH ?= 8 # in bits
 
 # HWPE Subsystem:
-# HWPE_ELEMWIDTH_FACT determines the width (in bits) of the HWPE memory accesses
-# (to the activation memory), and also of the AXI interface dedicated to sensors.
-# Such width is equal to HWPE_ELEMWIDTH_FACT * ACT_MEM_ELEMWIDTH.
+# HWPE_DATAWIDTH_FACT determines the width (in bits) of the HWPE memory accesses
+# (to its activation memory), as a multiple of bank width:
+# HWPE_DATAWIDTH_FACT * ACT_MEM_NUMELEMWORD * ACT_MEM_ELEMWIDTH
 
-HWPE_ELEMWIDTH_FACT ?= 8
+HWPE_DATAWIDTH_FACT ?= 8
 
+# Configuration of AXI slave for sensor interface
+# It has to be a power of 2, > 8 bits; element width for AXI is always 8 bit
+SENSOR_AXI_DATAWIDTH ?= 256
 
 #########################
 # Parameters generation #
@@ -70,3 +73,5 @@ HW_CFG_DEFS += -D ACT_MEM_NUMBANKS=$(ACT_MEM_NUMBANKS)
 HW_CFG_DEFS += -D ACT_MEM_NUMBANKWORDS=$(ACT_MEM_NUMBANKWORDS)
 HW_CFG_DEFS += -D ACT_MEM_NUMELEMWORD=$(ACT_MEM_NUMELEMWORD)
 HW_CFG_DEFS += -D ACT_MEM_ELEMWIDTH=$(ACT_MEM_ELEMWIDTH)
+HW_CFG_DEFS += -D HWPE_DATAWIDTH_FACT=$(HWPE_DATAWIDTH_FACT)
+HW_CFG_DEFS += -D SENSOR_AXI_DATAWIDTH=$(SENSOR_AXI_DATAWIDTH)

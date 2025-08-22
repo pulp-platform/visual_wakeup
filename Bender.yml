@@ -10,14 +10,14 @@ package:
     - "Sergio Mazzola <smazzola@iis.ee.ethz.ch>"
 
 dependencies:
-  axi:            { git: "https://github.com/pulp-platform/axi.git",            version: 0.39.6 }
-  common_cells:   { git: "https://github.com/pulp-platform/common_cells.git",   version: 1.38.0 }
-  hci:            { git: "https://github.com/pulp-platform/hci.git",            rev: 8408a6d7a7a4d814dcb3468934e49b407b1c783e } # branch: main
-  scm:            { git: "https://github.com/pulp-platform/scm.git",            version: 1.2.0 }
-  snitch_cluster: { git: "https://github.com/pulp-platform/snitch_cluster.git", rev: 1e48b80ad50a62a100b9ee50513f80f43b349b58 } # branch: main
-  tech_cells_generic:     { git: "https://github.com/pulp-platform/tech_cells_generic.git", version: 0.2.13 }
-  hwpe-ctrl:              { git: "https://github.com/pulp-platform/hwpe-ctrl.git",        version: 1.6 }
-  hwpe-datamover-example: { git: "https://github.com/sermazz/hwpe-datamover-example.git", rev: bf8a5e13c2700d93039b6455bdcab689d4ced810 } # branch: smazzola/wakelet
+  axi:                { git: "https://github.com/pulp-platform/axi.git",                version: 0.39.6 }
+  common_cells:       { git: "https://github.com/pulp-platform/common_cells.git",       version: 1.38.0 }
+  hci:                { git: "https://github.com/pulp-platform/hci.git",                rev: 8408a6d7a7a4d814dcb3468934e49b407b1c783e } # branch: main
+  scm:                { git: "https://github.com/pulp-platform/scm.git",                version: 1.2.0 }
+  snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: 1e48b80ad50a62a100b9ee50513f80f43b349b58 } # branch: main
+  tech_cells_generic: { git: "https://github.com/pulp-platform/tech_cells_generic.git", version: 0.2.13 }
+  hwpe-ctrl:          { git: "https://github.com/pulp-platform/hwpe-ctrl.git",          version: 2.0 }
+  datamover:          { git: "https://github.com/pulp-platform/datamover.git",          rev: b247f8a561a47e1e37801d61c2fac5c5d3e66e5a } # branch: smazzola/multi-precision
   # Local dependencies
   wakelet-pd: { path: "target/asic" }
 

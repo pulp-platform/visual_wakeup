@@ -668,7 +668,7 @@ module wl_top
   hwpe_subsystem #(
     .DataWidth ( DataWidth ),
     .AddrWidth ( AddrWidth ),
-    .WidePortFact ( HwpeDataWidthFact ),
+    .HwpeDataWidthFact ( HwpeDataWidthFact ),
     .PeriphIdWidth ( PeriphIdWidth ),
     .ActMemNumBanks ( ActMemNumBanks ),
     .ActMemNumBankWords ( ActMemNumBankWords ),
@@ -688,5 +688,23 @@ module wl_top
     .axi_slv_rsp_o ( axi_slv_rsp_o ),
     .periph_slave ( periph_hwpe_if )
   );
+
+  `ifdef TARGET_SIMULATION
+    initial begin
+      // Peripheral bus (for HWPE control slave) has address, data, and strobe widths hardcoded
+      check_hardcoded_periph_dw: assert ($bits(core_data_data_t) == 32)
+      else begin
+        $error("[ASSERT FAILED] [%m] core_data_data_t is %d bits (hardcoded hwpe_ctrl_intf_periph expects %d bits) (%s:%0d)", $bits(core_data_data_t), 32, `__FILE__, `__LINE__);
+      end
+      check_hardcoded_periph_aw: assert ($bits(core_data_addr_t) == 32)
+      else begin
+        $error("[ASSERT FAILED] [%m] core_data_addr_t is %d bits (hardcoded hwpe_ctrl_intf_periph expects %d bits) (%s:%0d)", $bits(core_data_addr_t), 32, `__FILE__, `__LINE__);
+      end
+      check_hardcoded_periph_sw: assert ($bits(core_data_strb_t) == 4)
+      else begin
+        $error("[ASSERT FAILED] [%m] core_data_strb_t is %d bits (hardcoded hwpe_ctrl_intf_periph expects %d bits) (%s:%0d)", $bits(core_data_addr_t), 4, `__FILE__, `__LINE__);
+      end
+    end
+  `endif
 
 endmodule

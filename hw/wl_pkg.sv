@@ -83,18 +83,20 @@ package wl_pkg;
   localparam int ActMemElemWidth = `ifdef ACT_MEM_ELEMWIDTH `ACT_MEM_ELEMWIDTH `else 0 `endif;
   localparam int ActMemWordWidth = ActMemElemWidth * ActMemNumElemWord;
   // HWPE
-  localparam int HwpeDataWidthFact = 8;
-  localparam int HwpeDataWidth = ActMemElemWidth * HwpeDataWidthFact;
+  localparam int HwpeDataWidthFact = `ifdef HWPE_DATAWIDTH_FACT `HWPE_DATAWIDTH_FACT `else 0 `endif;
+  localparam int HwpeDataWidth = ActMemWordWidth * HwpeDataWidthFact;
+  localparam int HwpeStrobeWidth = ActMemNumElemWord * HwpeDataWidthFact; // one enable per each element of a word
 
   // AXI
   localparam int unsigned AxiAddrWidth = AddrWidth;
-  localparam int unsigned AxiDataWidth = HwpeDataWidth;
+  localparam int unsigned AxiDataWidth = `ifdef SENSOR_AXI_DATAWIDTH `SENSOR_AXI_DATAWIDTH `else 0 `endif;
+  localparam int unsigned AxiStrobeWidth = AxiDataWidth / 8;
   localparam int unsigned AxiSlvIdWidth = 2;
   localparam int unsigned AxiUserWidth = 1;
   // Types
   typedef logic [AxiAddrWidth-1:0]   axi_addr_t;
   typedef logic [AxiDataWidth-1:0]   axi_data_t;
-  typedef logic [AxiDataWidth/8-1:0] axi_strb_t;
+  typedef logic [AxiStrobeWidth-1:0] axi_strb_t;
   typedef logic [AxiSlvIdWidth-1:0]  axi_id_t;
   typedef logic [AxiUserWidth-1:0]   axi_user_t;
   // AXI bus types

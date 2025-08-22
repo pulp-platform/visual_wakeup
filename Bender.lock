@@ -62,6 +62,15 @@ packages:
     source:
       Git: https://github.com/pulp-platform/common_verification.git
     dependencies: []
+  datamover:
+    revision: b247f8a561a47e1e37801d61c2fac5c5d3e66e5a
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/datamover.git
+    dependencies:
+    - hci
+    - hwpe-ctrl
+    - hwpe-stream
   fpnew:
     revision: a8e0cba6dd50f357ece73c2c955d96efc3c6c315
     version: null
@@ -78,7 +87,7 @@ packages:
     dependencies:
     - common_cells
   hci:
-    revision: 8408a6d7a7a4d814dcb3468934e49b407b1c783e
+    revision: 7a3c1775e13b70e5b0565cedc591457517d53bc9
     version: null
     source:
       Git: https://github.com/pulp-platform/hci.git
@@ -90,24 +99,15 @@ packages:
     - redundancy_cells
     - register_interface
   hwpe-ctrl:
-    revision: 1916c72f024175f1fe351acc3db3c6e9925a117d
-    version: 1.7.3
+    revision: 3690a3c648f120546d8de2bc583d5170c36d2f20
+    version: 2.0.0
     source:
       Git: https://github.com/pulp-platform/hwpe-ctrl.git
     dependencies:
     - tech_cells_generic
-  hwpe-datamover-example:
-    revision: bf8a5e13c2700d93039b6455bdcab689d4ced810
-    version: null
-    source:
-      Git: https://github.com/sermazz/hwpe-datamover-example.git
-    dependencies:
-    - hci
-    - hwpe-ctrl
-    - hwpe-stream
   hwpe-stream:
-    revision: c1e25094bf9f2fee754611ef7491b7a1144e11b9
-    version: 1.9.1
+    revision: de6e3af14b99440d107ab7aa6d8791321ee4c357
+    version: null
     source:
       Git: https://github.com/pulp-platform/hwpe-stream.git
     dependencies:
@@ -149,8 +149,8 @@ packages:
     - register_interface
     - tech_cells_generic
   register_interface:
-    revision: 5daa85d164cf6b54ad061ea1e4c6f3624556e467
-    version: 0.4.5
+    revision: 8e8c209ea559d3b54f45cf30fcce95ce70ff5e49
+    version: 0.4.6
     source:
       Git: https://github.com/pulp-platform/register_interface.git
     dependencies:

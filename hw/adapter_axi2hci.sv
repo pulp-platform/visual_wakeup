@@ -21,16 +21,27 @@ module adapter_axi2hci #(
   output axi_resp_t       axi_slave_resp_o,
   hci_core_intf.initiator tcdm_master
 );
+
   localparam int unsigned AxiAddrWidth = $bits(axi_slave_req_i.aw.addr);
   localparam int unsigned AxiDataWidth = $bits(axi_slave_req_i.w.data);
+  localparam int unsigned AxiStrbWidth = $bits(axi_slave_req_i.w.strb);
   localparam int unsigned AxiIdWidth   = $bits(axi_slave_req_i.aw.id);
-  localparam int unsigned AxiUserWidth = $bits(axi_slave_req_i.w.data);
+  localparam int unsigned AxiUserWidth = $bits(axi_slave_req_i.w.user);
+
+  localparam int unsigned TcdmAddrWidth = $bits(tcdm_master.add);
+  localparam int unsigned TcdmDataWidth = $bits(tcdm_master.data);
+  localparam int unsigned TcdmBeWidth   = $bits(tcdm_master.be);
+
+  /////////////
+  // AXI cut //
+  /////////////
+
+  // axi_to_mem requires AW and W channels to be valid at the same time
+  // This is not compliant with AXI spec: we use axi_cut to patch this
 
   axi_req_t  axi_slave_req_cut;
   axi_resp_t axi_slave_resp_cut;
 
-  // axi_to_mem requires AW and W channels to be valid at the same time
-  // This is not compliant with AXI spec: we use axi_cut to patch this
   axi_cut #(
     .BypassAw ( 1'b0 ),
     .BypassW ( 1'b1 ),
@@ -53,14 +64,20 @@ module adapter_axi2hci #(
     .mst_resp_i ( axi_slave_resp_cut )
   );
 
-  logic                      mem_req;
-  logic                      mem_gnt;
-  logic [AxiAddrWidth-1:0]   mem_addr;
-  logic [AxiDataWidth-1:0]   mem_wdata;
-  logic [AxiDataWidth/8-1:0] mem_strb;
-  logic                      mem_we;
-  logic                      mem_rvalid;
-  logic [AxiDataWidth-1:0]   mem_rdata;
+  //////////////////
+  // TCDM adapter //
+  //////////////////
+
+  /* AXI to memory */
+
+  logic                    mem_req;
+  logic                    mem_gnt;
+  logic [AxiAddrWidth-1:0] mem_addr;
+  logic [AxiDataWidth-1:0] mem_wdata;
+  logic [AxiStrbWidth-1:0] mem_strb;
+  logic                    mem_we;
+  logic                    mem_rvalid;
+  logic [AxiDataWidth-1:0] mem_rdata;
 
   axi_to_mem #(
     .axi_req_t ( axi_req_t ),
@@ -72,7 +89,7 @@ module adapter_axi2hci #(
     .BufDepth ( 1 ),
     .HideStrb ( 0 ),
     .OutFifoDepth ( 1 )
-  ) i_bus_instr_mem_axi_to_mem (
+  ) i_axi_to_mem (
     .clk_i ( clk_i ),
     .rst_ni ( rst_ni ),
     .busy_o ( /* Unconnected */ ),
@@ -92,11 +109,50 @@ module adapter_axi2hci #(
     .mem_rdata_i ( mem_rdata )
   );
 
-  assign tcdm_master.req      = mem_req;
-  assign tcdm_master.add      = mem_addr;
-  assign tcdm_master.wen      = ~mem_we;
-  assign tcdm_master.data     = mem_wdata;
-  assign tcdm_master.be       = mem_strb;
+  /* Adapt memory buses with different datwidth and strobe */
+
+  logic                     mem_req_adapted;
+  logic                     mem_gnt_adapted;
+  logic [TcdmAddrWidth-1:0] mem_addr_adapted;
+  logic [TcdmDataWidth-1:0] mem_wdata_adapted;
+  logic [TcdmBeWidth-1:0]   mem_strb_adapted;
+  logic                     mem_we_adapted;
+  logic                     mem_rvalid_adapted;
+  logic [TcdmDataWidth-1:0] mem_rdata_adapted;
+
+  adapter_mem_dw #(
+    .SrcDataWidth ( AxiDataWidth ),
+    .SrcStrbWidth ( AxiStrbWidth ),
+    .SrcAddrWidth ( AxiAddrWidth ),
+    .DstDataWidth ( TcdmDataWidth ),
+    .DstStrbWidth ( TcdmBeWidth ),
+    .DstAddrWidth ( TcdmAddrWidth )
+  ) i_adapter_mem_dw (
+    .clk_i ( clk_i ),
+    .rst_ni ( rst_ni ),
+    .src_req_i ( mem_req ),
+    .src_gnt_o ( mem_gnt ),
+    .src_addr_i ( mem_addr ),
+    .src_wdata_i ( mem_wdata ),
+    .src_strb_i ( mem_strb ),
+    .src_we_i ( mem_we ),
+    .src_rvalid_o ( mem_rvalid ),
+    .src_rdata_o ( mem_rdata ),
+    .dst_req_o ( mem_req_adapted ),
+    .dst_gnt_i ( mem_gnt_adapted ),
+    .dst_addr_o ( mem_addr_adapted ),
+    .dst_wdata_o ( mem_wdata_adapted ),
+    .dst_strb_o ( mem_strb_adapted ),
+    .dst_we_o ( mem_we_adapted ),
+    .dst_rvalid_i ( mem_rvalid_adapted ),
+    .dst_rdata_i ( mem_rdata_adapted )
+  );
+
+  assign tcdm_master.req      = mem_req_adapted;
+  assign tcdm_master.add      = mem_addr_adapted;
+  assign tcdm_master.wen      = ~mem_we_adapted;
+  assign tcdm_master.data     = mem_wdata_adapted;
+  assign tcdm_master.be       = mem_strb_adapted;
   assign tcdm_master.r_ready  = '1;
   assign tcdm_master.user     = '0;
   assign tcdm_master.id       = '0;
@@ -104,9 +160,9 @@ module adapter_axi2hci #(
   assign tcdm_master.ereq     = '0;
   assign tcdm_master.r_eready = '1;
 
-  assign mem_gnt    = tcdm_master.gnt;
-  assign mem_rdata  = tcdm_master.r_data;
-  assign mem_rvalid = tcdm_master.r_valid;
+  assign mem_gnt_adapted    = tcdm_master.gnt;
+  assign mem_rdata_adapted  = tcdm_master.r_data;
+  assign mem_rvalid_adapted = tcdm_master.r_valid;
   // unused from tcdm_master
   // - tcdm_master.r_user
   // - tcdm_master.r_id

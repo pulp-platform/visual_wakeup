@@ -7,28 +7,27 @@
 `include "hci_helpers.svh"
 
 module hwpe_subsystem #(
-  parameter int unsigned DataWidth = 32,
   parameter int unsigned AddrWidth = 32,
-  parameter int unsigned WidePortFact = 4,
+  parameter int unsigned HwpeDataWidthFact = 4,
   parameter int unsigned PeriphIdWidth = 0,
   // Activation memory
   parameter int unsigned ActMemNumBanks = 16,
   parameter int unsigned ActMemNumBankWords = 128,
-  parameter int unsigned ActMemNumElemWord = 1,
-  parameter int unsigned ActMemElemWidth = 32,
+  parameter int unsigned ActMemNumElemWord = 4,
+  parameter int unsigned ActMemElemWidth = 8,
   // AXI channels
   parameter type axi_aw_chan_t = logic,
-  parameter type  axi_w_chan_t = logic,
-  parameter type  axi_b_chan_t = logic,
+  parameter type axi_w_chan_t = logic,
+  parameter type axi_b_chan_t = logic,
   parameter type axi_ar_chan_t = logic,
-  parameter type  axi_r_chan_t = logic,
+  parameter type axi_r_chan_t = logic,
   // AXI req & resp
-  parameter type axi_req_t  = logic,
+  parameter type axi_req_t = logic,
   parameter type axi_resp_t = logic,
   // Dependent parameters: do not modify!
-  localparam int unsigned HwpeDataWidth = DataWidth * WidePortFact,
-  localparam int unsigned ActMemWordWidth = ActMemElemWidth * ActMemNumElemWord,
-  parameter int unsigned ActMemAddrWidth = $clog2(ActMemNumBankWords) + 2 // bank 4-byte words + 2 LSBs for bytes
+  localparam int unsigned ActMemWordWidth = ActMemNumElemWord * ActMemElemWidth,
+  localparam int unsigned HwpeDataWidth = ActMemWordWidth * HwpeDataWidthFact,
+  localparam int unsigned ActMemAddrWidth = $clog2(ActMemNumBankWords)
 )(
   input  logic clk_i,
   input  logic rst_ni,
@@ -43,68 +42,58 @@ module hwpe_subsystem #(
   // Hw config //
   ///////////////
 
-  localparam int unsigned NumHwpe = 2; // Accelerator + Sensor interface
-
-  localparam int unsigned HciByteWidth = 8;
-  localparam int unsigned HciIdWidth = 2; // HWPE + Sensor port
+  localparam int unsigned NumHciPorts = 2; // Accelerator + Sensor interface
+  localparam int unsigned HciIdWidth = NumHciPorts;
 
   //////////////////////////////
   // Activation mem & interco //
   //////////////////////////////
 
   // HWPE initiator
-  localparam hci_package::hci_size_parameter_t `HCI_SIZE_PARAM(hci_hwpe) = '{
+  localparam hci_package::hci_size_parameter_t `HCI_SIZE_PARAM(hci_initiator) = '{
     DW:  HwpeDataWidth,
     AW:  AddrWidth,
-    BW:  HciByteWidth,
+    BW:  ActMemElemWidth,
     UW:  hci_package::DEFAULT_UW,
     IW:  HciIdWidth,
     EW:  hci_package::DEFAULT_EW,
     EHW: hci_package::DEFAULT_EHW
   };
-  `HCI_INTF_ARRAY(hci_hwpe, clk_i, 0:1);
+  `HCI_INTF_ARRAY(hci_initiator, clk_i, 0:1);
 
   // HWPE routed to mem
   localparam hci_package::hci_size_parameter_t `HCI_SIZE_PARAM(hci_mem_routed) = '{
     DW:  ActMemWordWidth,
     AW:  ActMemAddrWidth,
-    BW:  HciByteWidth,
+    BW:  ActMemElemWidth,
     UW:  hci_package::DEFAULT_UW,
     IW:  HciIdWidth,
     EW:  hci_package::DEFAULT_EW,
     EHW: hci_package::DEFAULT_EHW
   };
-  `HCI_INTF_ARRAY(hci_mem_routed, clk_i, 0:ActMemNumBanks*NumHwpe-1);
+  `HCI_INTF_ARRAY(hci_mem_routed, clk_i, 0:ActMemNumBanks*NumHciPorts-1);
 
   // Activation memory target
-  localparam hci_package::hci_size_parameter_t `HCI_SIZE_PARAM(hci_mem) = '{
-    DW:  ActMemWordWidth,
-    AW:  ActMemAddrWidth,
-    BW:  HciByteWidth,
-    UW:  hci_package::DEFAULT_UW,
-    IW:  HciIdWidth,
-    EW:  hci_package::DEFAULT_EW,
-    EHW: hci_package::DEFAULT_EHW
-  };
+  localparam hci_package::hci_size_parameter_t `HCI_SIZE_PARAM(hci_mem) = `HCI_SIZE_PARAM(hci_mem_routed);
   `HCI_INTF_ARRAY(hci_mem, clk_i, 0:ActMemNumBanks-1);
 
   /* Interconnect */
 
-  // - 2 arbitrated ports (accelerator + sensor)
+  // - 2 initiator ports (accelerator + sensor)
   // - routing of those ports to memory banks + arbitration
   // - ActMemNumBanks on the slave side
 
-  for (genvar i = 0; i < NumHwpe; i++) begin : gen_mem_router
+  for (genvar i = 0; i < NumHciPorts; i++) begin : gen_mem_router
     hci_router #(
       .FIFO_DEPTH ( 0 ),
       .NB_OUT_CHAN ( ActMemNumBanks ),
-      .`HCI_SIZE_PARAM(in) ( `HCI_SIZE_PARAM(hci_hwpe) ),
+      .`HCI_SIZE_PARAM(in) ( `HCI_SIZE_PARAM(hci_initiator) ),
       .`HCI_SIZE_PARAM(out) ( `HCI_SIZE_PARAM(hci_mem_routed) )
     ) i_mem_router (
       .clk_i ( clk_i ),
       .rst_ni ( rst_ni ),
       .clear_i ( 1'b0 ),
-      .in ( hci_hwpe[i] ),
+      .in ( hci_initiator[i] ),
       .out ( hci_mem_routed[i*ActMemNumBanks:(i+1)*ActMemNumBanks-1] )
     );
   end
@@ -116,7 +105,7 @@ module hwpe_subsystem #(
   };
 
   hci_arbiter_tree #(
-    .NB_REQUESTS ( NumHwpe ),
+    .NB_REQUESTS ( NumHciPorts ),
     .NB_CHAN ( ActMemNumBanks ),
     .`HCI_SIZE_PARAM(out)( `HCI_SIZE_PARAM(hci_mem_routed) )
   ) i_mem_arbiter_tree (
@@ -132,6 +121,8 @@ module hwpe_subsystem #(
   // Sensor interface //
   //////////////////////
 
+  // On HCI initiator port 1
+
   adapter_axi2hci #(
     .axi_aw_chan_t ( axi_aw_chan_t ),
     .axi_w_chan_t ( axi_w_chan_t ),
@@ -145,79 +136,38 @@ module hwpe_subsystem #(
     .rst_ni ( rst_ni ),
     .axi_slave_req_i ( axi_slv_req_i ),
     .axi_slave_resp_o ( axi_slv_rsp_o ),
-    .tcdm_master ( hci_hwpe[1] )
+    .tcdm_master ( hci_initiator[1] )
   );
 
   //////////
   // HWPE //
   //////////
 
-  logic [WidePortFact-1:0]                tcdm_req;
-  logic [WidePortFact-1:0]                tcdm_gnt;
-  logic [WidePortFact-1:0][AddrWidth-1:0] tcdm_add;
-  logic [WidePortFact-1:0]                tcdm_wen;
-  logic [WidePortFact-1:0][3:0]           tcdm_be;
-  logic [WidePortFact-1:0][DataWidth-1:0] tcdm_data;
-  logic [WidePortFact-1:0][DataWidth-1:0] tcdm_r_data;
-  logic [WidePortFact-1:0]                tcdm_r_valid;
+  // On HCI initiator port 0
 
-  assign hci_hwpe[0].req      = tcdm_req[0]; // req is the same for all WidePortFact ports
-  assign hci_hwpe[0].add      = tcdm_add[0]; // we need only the base address of the request
-  assign hci_hwpe[0].wen      = tcdm_wen[0]; // wen is the same for all ports
-  assign hci_hwpe[0].r_ready  = 1'b1;
-  assign hci_hwpe[0].user     = '0;
-  assign hci_hwpe[0].id       = '0;
-  assign hci_hwpe[0].ecc      = '0;
-  assign hci_hwpe[0].ereq     = '0;
-  assign hci_hwpe[0].r_eready = '0;
-
-  generate
-    for(genvar i = 0; i < WidePortFact; i++) begin: gen_multiport_bindings
-      assign hci_hwpe[0].data[(i+1)*DataWidth-1:i*DataWidth] = tcdm_data[i];
-      assign hci_hwpe[0].be[i*4+3:i*4] = tcdm_be[i];
-      assign tcdm_r_data[i] = hci_hwpe[0].r_data[(i+1)*DataWidth-1:i*DataWidth];
-      assign tcdm_gnt[i] = hci_hwpe[0].gnt;
-      assign tcdm_r_valid[i] = hci_hwpe[0].r_valid;
-    end
-  endgenerate
-
-  // inside datamover_top_wrap:
-  // DataWidth and AddrWidth hardcoded to 32
-  datamover_top_wrap #(
-    .MP ( WidePortFact ),
-    .ID ( PeriphIdWidth )
+  datamover_top #(
+    .ID ( PeriphIdWidth ),
+    .BANDWIDTH ( HwpeDataWidth ),
+    .NUM_ELEM_WORD ( ActMemNumElemWord ),
+    .ELEM_WIDTH ( ActMemElemWidth ),
+    .N_CORES ( 1 ),
+    .N_CONTEXT ( 2 ),
+    .MISALIGNED_ACCESSES ( 0 )
   ) i_datamover_top_wrap (
     .clk_i ( clk_i ),
     .rst_ni ( rst_ni ),
     .test_mode_i ( 1'b0 ),
     .evt_o ( /* Unconneccted */ ),
     // TCDM interface, to bind to HCI interface
-    .tcdm_req ( tcdm_req ),
-    .tcdm_gnt ( tcdm_gnt ),
-    .tcdm_add ( tcdm_add ),
-    .tcdm_wen ( tcdm_wen ),
-    .tcdm_be ( tcdm_be ),
-    .tcdm_data ( tcdm_data ),
-    .tcdm_r_data ( tcdm_r_data ),
-    .tcdm_r_valid ( tcdm_r_valid ),
-    // Peripheral interface for config
-    .periph_req ( periph_slave.req ),
-    .periph_gnt ( periph_slave.gnt ),
-    .periph_add ( periph_slave.add ),
-    .periph_wen ( periph_slave.wen ),
-    .periph_be ( periph_slave.be ),
-    .periph_data ( periph_slave.data ),
-    .periph_id ( periph_slave.id ),
-    .periph_r_data ( periph_slave.r_data ),
-    .periph_r_valid ( periph_slave.r_valid ),
-    .periph_r_id ( periph_slave.r_id )
+    .tcdm ( hci_initiator[0] ),
+    .periph ( periph_slave )
   );
 
   ///////////////////////
   // Activation memory //
   ///////////////////////
 
-  for (genvar i = 0; i < ActMemNumBanks; i++) begin : banks_gen
+  for (genvar i = 0; i < ActMemNumBanks; i++) begin : gen_banks
 
     // With regular TCDM banks, the grant is always asserted
     assign hci_mem[i].gnt = 1'b1;
@@ -227,16 +177,16 @@ module hwpe_subsystem #(
     `ifdef TARGET_WL_ACT_SCM
       // Generate standard-cell-based memory
       register_file_1r_1w_be #(
-        .ADDR_WIDTH ( $clog2(ActMemNumBankWords) ),
-        .DATA_WIDTH ( DataWidth ),
-        .NUM_BYTE   ( DataWidth / 8 )
+        .ADDR_WIDTH ( ActMemAddrWidth ),
+        .DATA_WIDTH ( ActMemWordWidth ),
+        .NUM_BYTE   ( ActMemNumElemWord )
       ) i_scm (
         .clk ( clk_i ),
         .ReadEnable ( hci_mem[i].req & hci_mem[i].wen ),
-        .ReadAddr ( hci_mem[i].add[$clog2(ActMemNumBankWords)+2-1:2] ),
+        .ReadAddr ( hci_mem[i].add[ActMemAddrWidth-1:$clog2(ActMemNumElemWord)] ),
         .ReadData ( hci_mem[i].r_data ),
         .WriteEnable ( hci_mem[i].req & ~hci_mem[i].wen ),
-        .WriteAddr ( hci_mem[i].add[$clog2(ActMemNumBankWords)+2-1:2] ),
+        .WriteAddr ( hci_mem[i].add[ActMemAddrWidth-1:$clog2(ActMemNumElemWord)] ),
         .WriteData ( hci_mem[i].data ),
         .WriteBE ( hci_mem[i].be )
       );
@@ -246,7 +196,7 @@ module hwpe_subsystem #(
       tc_sram #(
         .NumWords ( ActMemNumBankWords ),
         .DataWidth ( DataWidth ),
-        .ByteWidth ( 32'd8 ),
+        .ByteWidth ( ActMemWordWidth ),
         .NumPorts ( 32'd1 ),
         .Latency ( 32'd1 )
       ) i_sram (
@@ -254,7 +204,7 @@ module hwpe_subsystem #(
         .rst_ni ( rst_ni ),
         .req_i ( hci_mem[i].req ),
         .we_i ( ~hci_mem[i].wen ),
-        .addr_i ( hci_mem[i].add[$clog2(ActMemNumBankWords)+2-1:2] ),
+        .addr_i ( hci_mem[i].add[ActMemAddrWidth-1:$clog2(ActMemNumElemWord)] ),
         .wdata_i ( hci_mem[i].data ),
         .be_i ( hci_mem[i].be ),
         .rdata_o ( hci_mem[i].r_data )
@@ -271,13 +221,9 @@ module hwpe_subsystem #(
 
   `ifdef TARGET_SIMULATION
     initial begin
-      check_hardcoded_dw: assert (DataWidth == 32)
+      check_hardcoded_aw: assert (AddrWidth == hci_package::DEFAULT_AW)
       else begin
-        $error("[ASSERT FAILED] [%m] DataWidth %0d (!= %0d) is not supported by datamover_top_wrap (%s:%0d)", DataWidth, 32, `__FILE__, `__LINE__);
-      end
-      check_hardcoded_aw: assert (AddrWidth == 32)
-      else begin
-        $error("[ASSERT FAILED] [%m] AddrWidth %0d (!= %0d) is not supported by datamover_top_wrap (%s:%0d)", AddrWidth, 32, `__FILE__, `__LINE__);
+        $error("[ASSERT FAILED] [%m] AddrWidth %0d (!= %0d) is not supported by datamover_top (%s:%0d)", AddrWidth, hci_package::DEFAULT_AW, `__FILE__, `__LINE__);
       end
     end
   `endif
